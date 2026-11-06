@@ -47,7 +47,8 @@ button:disabled { opacity: .4; cursor: default; }
 .hrv { flex: none; font-family: var(--display); font-weight: 700; font-size: 2.5rem; line-height: 1; font-variant-numeric: tabular-nums; min-width: 2.2ch; }
 .hru { font-size: .72rem; color: var(--muted); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-left: -4px; }
 .zp { font-size: .74rem; font-weight: 700; letter-spacing: .04em; padding: 3px 8px; border-radius: 999px; background: var(--line); white-space: nowrap; min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
-.conn { margin-left: auto; display: flex; gap: 6px; flex: none; }
+.clk { flex: none; margin-left: auto; font-family: var(--display); font-weight: 600; font-size: .95rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.conn { margin-left: 6px; display: flex; gap: 6px; flex: none; }
 .cb { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 0 10px; font-weight: 600; font-size: .85rem; min-height: 36px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
 .dot.on { background: var(--ok); } .dot.busy { background: var(--warn); }
@@ -169,6 +170,7 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
 <header class="top">
   <span class="hrv" id="hrv">--</span><span class="hru">lpm</span>
   <span class="zp" id="hrz">Sin banda</span>
+  <span class="clk" id="clk" aria-label="Hora"></span>
   <div class="conn">
     <button type="button" class="cb" id="btnHr"><span class="dot" id="dotHr"></span>Banda</button>
     <button type="button" class="cb" id="btnBk"><span class="dot" id="dotBk"></span>Bici</button>
@@ -434,6 +436,12 @@ var V = {
   calf_1p: { n: 'Talones a una pierna con pausa', eq: 'db', t: 'reps', fig: 'calf', uni: 1, rr: [10, 15], tempo: 'pausa 2 s abajo · 1 s arriba', d: 'Igual que a una pierna en el escalón, con 2 segundos estirando abajo y 1 segundo apretando arriba.', e: 'Saltarte la pausa abajo.', q: 'elevacion de talones pausa' },
   calf_seat: { n: 'Talones sentado con barra', eq: 'bar', t: 'reps', fig: 'calf', rr: [12, 20], tempo: 'pausa 1 s arriba', d: 'Sentado en una silla, con las puntas de los pies sobre un libro grueso y la barra sobre las rodillas con una toalla. Sube los talones y baja lento. Trabaja el sóleo, la parte de abajo de la pantorrilla.', e: 'Rebotar. Recorrido corto.', q: 'elevacion de talones sentado' },
 
+  lateral: { n: 'Elevaciones laterales', eq: 'db', t: 'reps', fig: 'lateral', rr: [12, 15], tempo: '2 s bajando', d: 'De pie, una mancuerna liviana en cada mano a los costados. Sube los brazos hacia los lados, con los codos apenas doblados, hasta la altura de los hombros, y baja lento. Es el ejercicio que más ensancha los hombros.', e: 'Usar mucho peso y subir con impulso del cuerpo. Subir más arriba de los hombros. Encoger el cuello.', q: 'elevaciones laterales mancuernas tecnica' },
+  lateral_s: { n: 'Elevaciones laterales lentas', eq: 'db', t: 'reps', fig: 'lateral', rr: [12, 15], tempo: '3 s bajando · pausa 1 s arriba', d: 'Igual que las elevaciones laterales, con una pausa de 1 segundo arriba y bajando en 3 segundos.', e: 'Perder la pausa arriba.', q: 'elevaciones laterales lentas' },
+  lateral_1: { n: 'Elevación lateral a un brazo', eq: 'db', t: 'reps', fig: 'lateral', uni: 1, rr: [12, 15], tempo: '3 s bajando', d: 'Una mancuerna, la otra mano apoyada en la pared o un mueble y el cuerpo levemente inclinado hacia el lado contrario. Permite usar un poco más de peso con buena técnica.', e: 'Girar el tronco para subir.', q: 'elevacion lateral a un brazo' },
+  curl_h_s: { n: 'Curl martillo lento', eq: 'db', t: 'reps', fig: 'curl', tempo: '3 s bajando', d: 'Curl con las palmas mirándose entre sí, bajando en 3 segundos.', e: 'Mover los codos.', q: 'curl martillo' },
+  tri_floor_s: { n: 'Tríceps acostado lento', eq: 'db', t: 'reps', fig: 'tri', tempo: '3 s bajando', d: 'Tríceps acostado en el piso, bajando las mancuernas en 3 segundos al lado de la cabeza.', e: 'Mover los hombros en vez de los codos.', q: 'extension de triceps acostado mancuernas' },
+
   plank: { n: 'Plancha', eq: 'bw', t: 'time', fig: 'plank', d: 'Antebrazos en el suelo, codos bajo los hombros. Cuerpo recto de la cabeza a los talones, abdomen y glúteos apretados. Respira normal.', e: 'Cadera caída o trasero arriba. Aguantar la respiración.', q: 'plancha abdominal tecnica' },
   plank_rkc: { n: 'Plancha apretando todo', eq: 'bw', t: 'time', fig: 'plank', d: 'Igual que la plancha, pero aprieta al máximo abdomen, glúteos y muslos, y tira los codos hacia los pies sin moverlos. Es más corta y mucho más intensa.', e: 'Soltar la tensión a mitad de tiempo.', q: 'RKC plank' }
 };
@@ -451,9 +459,12 @@ var SL = {
   tri: { n: 'Tríceps', lv: ['tri_oh', 'tri_oh_s'], alt: ['tri_floor'] },
   glute1: { n: 'Glúteo a una pierna', lv: ['br1_bw', 'bridge_1', 'br1_p'], alt: [] },
   core: { n: 'Core', lv: ['plank', 'plank_rkc'], alt: [] },
-  calf: { n: 'Pantorrillas', lv: ['calf', 'calf_1', 'calf_1p'], alt: ['calf_seat'] }
+  calf: { n: 'Pantorrillas', lv: ['calf', 'calf_1', 'calf_1p'], alt: ['calf_seat'] },
+  lat: { n: 'Hombro lateral', lv: ['lateral', 'lateral_s', 'lateral_1'], alt: [] },
+  curlA: { n: 'Bíceps (martillo)', lv: ['curl_h', 'curl_h_s'], alt: ['curl', 'curl_bar'] },
+  triA: { n: 'Tríceps acostado', lv: ['tri_floor', 'tri_floor_s'], alt: ['tri_oh'] }
 };
-var RT = { A: ['warm', 'legs', 'push', 'pull', 'glute', 'chin', 'calf', 'cool'], B: ['warm', 'hinge', 'ohp', 'chin', 'curl', 'tri', 'glute1', 'core', 'calf', 'cool'] };
+var RT = { A: ['warm', 'legs', 'push', 'pull', 'glute', 'chin', 'lat', 'curlA', 'triA', 'calf', 'cool'], B: ['warm', 'hinge', 'ohp', 'chin', 'curl', 'tri', 'glute1', 'core', 'calf', 'cool'] };
 function cur(slot) { var c = ST.choice[slot]; return (c && V[c]) ? c : SL[slot].lv[0]; }
 function planFor(slot) {
   var v = cur(slot), x = V[v], ph = phase(weekNum());
@@ -498,6 +509,7 @@ var FIG = {
   curl: function () { var d = 2.6; return G(127) + '<circle class="h" cx="100" cy="28" r="9"/>' + S('M100,38 L100,80 M100,80 L94,125 M100,80 L106,125') + P('M100,42 L102,62 L104,84', 'M100,42 L102,62 L114,46', d) + W(104, 86, 114, 44, d); },
   tri: function () { var d = 2.8; return G(127) + '<circle class="h" cx="100" cy="42" r="9"/>' + S('M100,52 L100,92 M100,92 L94,125 M100,92 L106,125') + P('M100,56 L106,30 L92,44', 'M100,56 L106,30 L106,10', d) + W(92, 44, 106, 10, d); },
   calf: function () { var d = 2.2; return G(127) + H(100, 28, 100, 20, d) + P('M100,40 L100,80', 'M100,32 L100,72', d) + P('M100,80 L100,122 L112,126', 'M100,72 L102,114 L112,126', d) + P('M100,44 L101,64 L102,84', 'M100,36 L101,56 L102,76', d) + W(102, 86, 102, 78, d); },
+  lateral: function () { var d = 2.6; return G(127) + '<circle class="h" cx="100" cy="26" r="9"/>' + S('M100,36 L100,80 M100,80 L90,125 M100,80 L110,125') + P('M100,42 L96,62 L94,82', 'M100,42 L122,44 L144,46', d) + P('M100,42 L104,62 L106,82', 'M100,42 L78,44 L56,46', d) + W(94, 84, 146, 46, d) + W(106, 84, 54, 46, d); },
   plank: function () { var d = 2.4; return G(125) + '<circle class="h" cx="46" cy="98" r="9"/>' + S('M62,100 L62,118 L88,118') + P('M62,100 L116,106 L172,120', 'M62,100 L116,102 L172,120', d); }
 };
 function svgFig(k) { return '<svg viewBox="0 0 200 140" aria-hidden="true">' + (FIG[k] ? FIG[k]() : '') + '</svg>'; }
@@ -1216,7 +1228,9 @@ function selectTab(t) {
 }
 Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.addEventListener('click', function () { selectTab(b.getAttribute('data-tab')); }); });
 setInterval(function () { renderFT(); bTick(); if (TAB === 'b') renderB(); }, 200);
-setInterval(function () { renderHR(); if (TAB === 'f') drawStrip(); if (TAB === 'b') drawB(); }, 1000);
+function tickClock() { var d = new Date(); $('clk').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+tickClock();
+setInterval(function () { tickClock(); renderHR(); if (TAB === 'f') drawStrip(); if (TAB === 'b') drawB(); }, 1000);
 window.addEventListener('resize', function () { if (TAB === 'f') drawStrip(); if (TAB === 'b') drawB(); if (TAB === 'p') drawBody(ST.body.slice().sort(function (x, y) { return x.d < y.d ? -1 : 1; })); });
 
 if (!ST.seed1) { if (!ST.marks['2026-11-03'] && !ST.hist.length) ST.marks['2026-11-03'] = { t: 'f', r: 'A' }; ST.seed1 = true; save(); }
