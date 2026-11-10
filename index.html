@@ -700,9 +700,10 @@ function drawChart(cv, o) {
 
 /* ---------- FUERZA ---------- */
 var FZ = { routine: 'A', idx: 0, mode: 'idle', t0: 0, rs: 0, restMin: 60, sess: null, hrSet: [], lastSet: null, readyBeep: false, doneBeep: false, figV: null };
-function its() {
-  var base = RT[FZ.routine].slice();
-  (ST.custom || []).forEach(function (c) { if (!c.off && (c.r === 'AB' || c.r === FZ.routine)) base.splice(base.length - 1, 0, 'cu_' + c.id); });
+function its() { return itemsFor(FZ.routine); }
+function itemsFor(R) {
+  var base = RT[R].slice();
+  (ST.custom || []).forEach(function (c) { if (!c.off && (c.r === 'AB' || c.r === R)) base.splice(base.length - 1, 0, 'cu_' + c.id); });
   return base;
 }
 var FIGN = { split: 'Sentadilla / zancada', squat: 'Sentadilla', hinge: 'Bisagra (peso muerto)', bridge: 'Puente de glúteo', press: 'Press acostado', pushup: 'Flexión', row: 'Remo inclinado', ohp: 'Press sobre la cabeza', pull: 'Dominada', hang: 'Colgado', curl: 'Curl', tri: 'Tríceps', calf: 'Pantorrilla', plank: 'Plancha', rower: 'Bogadora', bike: 'Bicicleta' };
@@ -1201,7 +1202,26 @@ function openDay(k) {
   var h = '<h2>' + DL[d.getDay()] + ' ' + d.getDate() + (isT ? ' · hoy' : '') + '</h2>';
   h += '<p><b>Toca:</b> ' + esc(dayPlanText(k)) + (ST.ovr[k] ? ' <span class="muted">(cambiado a mano)</span>' : '') + '</p>';
   h += '<p><b>Hecho:</b> ' + (done.length ? esc(done.join(' · ')) : '<span class="muted">nada registrado</span>') + (m ? ' <span class="muted">(marcado a mano)</span>' : '') + '</p>';
-  var ty = planType(d);
+  var ty = planType(d), ph = phase(weekOf(d));
+  var R = dn.f || (ty === 'f' ? (WK[k] || nextRoutine()) : null);
+  if (R) {
+    h += '<h3 style="margin-top:6px">Rutina ' + R + '</h3><div class="tbl"><table><thead><tr><th>Ejercicio</th><th>Series</th><th>Último</th></tr></thead><tbody>';
+    itemsFor(R).forEach(function (slot) {
+      var p = planFor(slot), x = p.x, ser = x.t === 'cardio' ? p.min + ' min' : x.t === 'time' ? p.sets + ' × ' + p.secs + ' s' : p.sets + ' × ' + p.rr[0] + '–' + p.rr[1] + (x.uni ? ' c/l' : '');
+      var last = (x.eq === 'db' || x.eq === 'bar') && ST.kg[p.v] != null ? ST.kg[p.v] + ' kg' : '–';
+      h += '<tr><td style="white-space:normal">' + esc(x.n) + '</td><td>' + ser + '</td><td>' + last + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+  }
+  if (dn.b || ty === 'b' || ty === 'bs') {
+    var bp = dn.b || bikeFor(d), segs = bikePlan(bp, weekOf(d)), tot = sum(segs.map(function (x) { return x.d; }));
+    h += '<h3 style="margin-top:6px">Bici · ' + planName(bp) + (bp === 'hills' ? ' · ' + Math.round(tot / 60) + ' min' : '') + '</h3><div class="tbl"><table><thead><tr><th>Tramo</th><th>Min</th><th>Pend.</th><th>Cadencia</th></tr></thead><tbody>';
+    segs.forEach(function (x) { h += '<tr><td style="white-space:normal">' + esc(x.n) + '</td><td>' + Math.round(x.d / 60 * 10) / 10 + '</td><td>' + x.g + '%</td><td>' + x.cad[0] + '–' + x.cad[1] + '</td></tr>'; });
+    h += '</tbody></table></div>';
+  }
+  if (ty === 'r' && !R && !dn.b) h += '<p class="muted">Día de descanso.</p>';
+  var dayHist = ST.hist.filter(function (s0) { return dkey(new Date(s0.start)) === k; });
+  if (dayHist.length) { h += '<div class="btns">'; dayHist.forEach(function (s0, j) { h += '<button type="button" data-sh="' + j + '">Ver sesión ' + (s0.type === 'fuerza' ? 'Rutina ' + s0.routine : 'Bici') + '</button>'; }); h += '</div>'; }
   if (isT && ty !== 'r') h += '<div class="btns"><button type="button" class="pri" id="dGo">Ir a la sesión de hoy</button></div>';
   h += '<p class="muted">Marcar como hecho (si entrenaste sin la app):</p><div class="btns"><button type="button" data-m="f:A">Fuerza A</button><button type="button" data-m="f:B">Fuerza B</button><button type="button" data-m="b">Bici</button><button type="button" data-m="r">Descanso</button></div>';
   if (m) h += '<div class="btns"><button type="button" data-m="x">Quitar la marca</button></div>';
@@ -1210,6 +1230,7 @@ function openDay(k) {
   h += '<div class="btns"><button type="button" data-close>Cerrar</button></div>';
   openOv(h);
   var go = $('dGo'); if (go) go.addEventListener('click', function () { closeOv(); goToday(); });
+  Array.prototype.forEach.call($('ovc').querySelectorAll('[data-sh]'), function (b) { b.addEventListener('click', function () { showSummary(dayHist[+b.getAttribute('data-sh')]); }); });
   Array.prototype.forEach.call($('ovc').querySelectorAll('[data-m]'), function (b) {
     b.addEventListener('click', function () {
       var v = b.getAttribute('data-m');
