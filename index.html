@@ -449,6 +449,8 @@ var V = {
   fly_p: { n: 'Aperturas con pausa abajo', eq: 'db', t: 'reps', fig: 'fly', rr: [12, 15], tempo: '3 s bajando · pausa 2 s abajo', d: 'Igual que las aperturas, con 2 segundos de pausa con los codos apoyados en el suelo, estirando el pecho.', e: 'Relajar el pecho en la pausa.', q: 'aperturas en el suelo pausa' },
   bog_back: { n: 'Bogadora · espalda', eq: 'none', t: 'cardio', fig: 'rower', min: 8, d: 'Alterna 4 veces: 1 minuto remando solo con tronco y brazos, con las piernas estiradas y fijas, apretando 1 segundo al final de cada palada; y 1 minuto con 10 paladas de potencia a fondo y el resto suave.', e: 'Usar las piernas en el minuto de solo tronco y brazos. Encorvar la espalda al tirar.', q: 'remo ergometro ejercicio solo brazos espalda' },
 
+  mob: { n: 'Movilidad y estiramiento', eq: 'none', t: 'cardio', fig: 'split', min: 7, mob: 1, d: 'Siete estiramientos de 1 minuto, respirando lento y sin rebotes: 1) Estocada baja, 30 s por lado: rodilla de atrás en el suelo y cadera hacia adelante (flexor de cadera). 2) Sentado con piernas estiradas, inclínate hacia los pies con la espalda recta (isquiotibiales). 3) Acostado, tobillo sobre la rodilla contraria y tira de la pierna hacia el pecho, 30 s por lado (glúteo). 4) Antebrazo en el marco de una puerta y gira el cuerpo hacia el otro lado, 30 s por lado (pecho). 5) Brazo cruzado frente al pecho, 30 s por lado (hombro). 6) En cuatro apoyos, alterna arquear y redondear la espalda (gato-vaca). 7) Postura del niño: sentado sobre los talones, brazos estirados adelante.', e: 'Rebotar o forzar hasta que duela. Aguantar la respiración. Con el hombro izquierdo, estira suave y sin dolor.', q: 'rutina estiramiento cadera isquiotibiales pecho hombros' },
+
   plank: { n: 'Plancha', eq: 'bw', t: 'time', fig: 'plank', d: 'Antebrazos en el suelo, codos bajo los hombros. Cuerpo recto de la cabeza a los talones, abdomen y glúteos apretados. Respira normal.', e: 'Cadera caída o trasero arriba. Aguantar la respiración.', q: 'plancha abdominal tecnica' },
   plank_rkc: { n: 'Plancha apretando todo', eq: 'bw', t: 'time', fig: 'plank', d: 'Igual que la plancha, pero aprieta al máximo abdomen, glúteos y muslos, y tira los codos hacia los pies sin moverlos. Es más corta y mucho más intensa.', e: 'Soltar la tensión a mitad de tiempo.', q: 'RKC plank' }
 };
@@ -472,9 +474,10 @@ var SL = {
   triA: { n: 'Tríceps acostado', lv: ['tri_floor', 'tri_floor_s'], alt: ['tri_oh'] },
   chestB: { n: 'Pecho (flexiones)', lv: ['pushup', 'pushup_e', 'flex_p', 'flex_w'], alt: ['flex_inc'] },
   fly: { n: 'Pecho (aperturas)', lv: ['fly', 'fly_p'], alt: [] },
-  coolB: { n: 'Cierre de espalda', lv: ['bog_back'], alt: ['bog_cool', 'bike_cool'] }
+  coolB: { n: 'Cierre de espalda', lv: ['bog_back'], alt: ['bog_cool', 'bike_cool'] },
+  mob: { n: 'Movilidad', lv: ['mob'], alt: [] }
 };
-var RT = { A: ['warm', 'legs', 'push', 'fly', 'pull', 'glute', 'chin', 'lat', 'curlA', 'triA', 'calf', 'cool'], B: ['warm', 'hinge', 'ohp', 'chestB', 'chin', 'curl', 'tri', 'glute1', 'core', 'calf', 'coolB'] };
+var RT = { A: ['warm', 'legs', 'push', 'fly', 'pull', 'glute', 'chin', 'lat', 'curlA', 'triA', 'calf', 'cool', 'mob'], B: ['warm', 'hinge', 'ohp', 'chestB', 'chin', 'curl', 'tri', 'glute1', 'core', 'calf', 'coolB', 'mob'] };
 function cur(slot) { var c = ST.choice[slot]; return (c && V[c]) ? c : SL[slot].lv[0]; }
 function planFor(slot) {
   var v = cur(slot), x = V[v], ph = phase(weekNum());
@@ -487,6 +490,7 @@ function planFor(slot) {
 }
 function zr(z) { var m = ST.settings.hrmax, lo = [0, 0.5, 0.6, 0.7, 0.8, 0.9][z], hi = [0, 0.6, 0.7, 0.8, 0.9, 1][z]; return [Math.round(lo * m), Math.round(hi * m)]; }
 function targetText(slot, p, ph) {
+  if (p.x.mob) return p.min + ' min · 7 estiramientos de 1 min, mira Técnica';
   if (p.x.t === 'cardio' && p.x.min) return p.min + ' min · intervalos, mira Técnica';
   if (p.x.t === 'cardio') { var z = slot === 'warm' ? 'zona 1–2' : 'zona 2 (' + zr(2)[0] + '–' + zr(2)[1] + ' lpm)'; return p.min + ' min · ' + z; }
   if (p.x.t === 'time') return p.sets + ' × ' + p.secs + ' s';
@@ -703,7 +707,7 @@ var FZ = { routine: 'A', idx: 0, mode: 'idle', t0: 0, rs: 0, restMin: 60, sess: 
 function its() { return itemsFor(FZ.routine); }
 function itemsFor(R) {
   var base = RT[R].slice();
-  (ST.custom || []).forEach(function (c) { if (!c.off && (c.r === 'AB' || c.r === R)) base.splice(base.length - 1, 0, 'cu_' + c.id); });
+  (ST.custom || []).forEach(function (c) { if (!c.off && (c.r === 'AB' || c.r === R)) base.splice(base.length - 2, 0, 'cu_' + c.id); });
   return base;
 }
 var FIGN = { split: 'Sentadilla / zancada', squat: 'Sentadilla', hinge: 'Bisagra (peso muerto)', bridge: 'Puente de glúteo', press: 'Press acostado', pushup: 'Flexión', row: 'Remo inclinado', ohp: 'Press sobre la cabeza', pull: 'Dominada', hang: 'Colgado', curl: 'Curl', tri: 'Tríceps', calf: 'Pantorrilla', plank: 'Plancha', rower: 'Bogadora', bike: 'Bicicleta' };
@@ -873,6 +877,14 @@ function seg(d, g, c, z, n) { return { d: d, g: g, cad: c, z: z, n: n }; }
 function bikePlan(id, w) {
   var s = [];
   if (id === 'base30') return [seg(300, 0, [85, 95], [1, 2], 'Calentamiento'), seg(1200, 2, [80, 90], [2, 2], 'Base zona 2'), seg(300, 0, [85, 95], [1, 1], 'Vuelta a la calma')];
+  if (id === 'puente') {
+    var n = w <= 3 ? 6 : w === 4 ? 8 : w === 5 ? 10 : w === 6 ? 5 : w === 7 ? 10 : 12;
+    var gp = w <= 4 ? 5 : w === 6 ? 4 : 6;
+    s.push(seg(300, 0, [85, 95], [1, 2], 'Calentamiento')); s.push(seg(180, 2, [80, 90], [2, 2], 'Calentamiento en subida'));
+    for (var q = 0; q < n; q++) { s.push(seg(45, gp, [75, 85], [4, 4], 'Puente ' + (q + 1) + ' de ' + n + ' · a fondo')); s.push(seg(75, 0, [90, 100], [1, 2], 'Bajada · suelto')); }
+    s.push(seg(360, 0, [85, 95], [1, 1], 'Vuelta a la calma'));
+    return s;
+  }
   if (id === 'base45') { s.push(seg(300, 0, [85, 95], [1, 2], 'Calentamiento')); for (var k = 0; k < 7; k++) s.push(seg(300, k % 2 ? 4 : 2, [80, 90], [2, 2], 'Base zona 2')); s.push(seg(300, 0, [85, 95], [1, 1], 'Vuelta a la calma')); return s; }
   var reps, g, on, cal, calma;
   if (w <= 2) { reps = 3; g = 10; on = 240; cal = [300, 300]; calma = 300; }
@@ -884,7 +896,7 @@ function bikePlan(id, w) {
   s.push(seg(calma, 0, [85, 95], [1, 1], 'Vuelta a la calma'));
   return s;
 }
-var PLANS = [{ id: 'base30', n: 'Base' }, { id: 'base45', n: 'Base' }, { id: 'hills', n: 'Subidas' }];
+var PLANS = [{ id: 'base30', n: 'Base' }, { id: 'base45', n: 'Base' }, { id: 'puente', n: 'Puente' }, { id: 'hills', n: 'Subidas' }];
 var BS = { plan: ST.bplan || 'base30', segs: [], run: false, acc: 0, rs: 0, seg: -1, sess: null, lastSample: 0 };
 function bTotal() { return sum(BS.segs.map(function (s) { return s.d; })); }
 function bElapsed() { return BS.acc + (BS.run ? Date.now() - BS.rs : 0); }
@@ -973,7 +985,7 @@ function drawB() {
 }
 
 /* ---------- resumen ---------- */
-function planName(id) { return id === 'base30' ? 'Base 30 min' : id === 'base45' ? 'Base 45 min' : 'Subidas'; }
+function planName(id) { return id === 'base30' ? 'Base 30 min' : id === 'base45' ? 'Base 45 min' : id === 'puente' ? 'Desafío Puente Cruces' : 'Subidas'; }
 function zoneBar(z) { var t = sum(z.slice(1)) || 1, h = '<div class="zbar">'; for (var k = 1; k <= 5; k++) if (z[k]) h += '<i style="width:' + (z[k] / t * 100) + '%;background:var(--z' + k + ')" title="Z' + k + '"></i>'; h += '</div><p class="muted" style="font-size:.8rem">'; for (k = 1; k <= 5; k++) h += 'Z' + k + ' ' + fmtS(z[k] || 0) + (k < 5 ? ' · ' : ''); return h + '</p>'; }
 function setsByEx(s) {
   var g = []; s.sets.forEach(function (x) { var last = g[g.length - 1]; if (!last || last.v !== x.v) { last = { v: x.v, list: [] }; g.push(last); } last.list.push(x); }); return g;
@@ -1151,9 +1163,8 @@ function planType(d) { return ST.ovr[dkey(d)] || TEMPLATE[d.getDay()]; }
 function bikeFor(d) {
   var t = planType(d), w = weekOf(d), wd = d.getDay();
   if (t === 'bs') return 'base30';
-  if (w <= 2) return wd === 2 ? 'base30' : 'base45';
-  if (w === 6) return wd === 4 ? 'hills' : 'base30';
-  return wd === 4 ? 'hills' : 'base45';
+  if (wd === 2) return w <= 2 ? 'base30' : 'puente';
+  return w === 6 ? 'base30' : 'base45';
 }
 function doneOn(k) {
   var r = { f: null, b: null, r: false };
@@ -1192,7 +1203,7 @@ function renderWeek() {
 function dayPlanText(k) {
   var d = kdate(k), ty = planType(d);
   if (ty === 'f') return 'Fuerza' + (WK[k] ? ' · Rutina ' + WK[k] : '');
-  if (ty === 'b' || ty === 'bs') { var bp = bikeFor(d); return TYN[ty] + ' · ' + planName(bp) + (bp === 'hills' ? ' ' + Math.round(sum(bikePlan(bp, weekOf(d)).map(function (x) { return x.d; })) / 60) + ' min' : ''); }
+  if (ty === 'b' || ty === 'bs') { var bp = bikeFor(d); return TYN[ty] + ' · ' + planName(bp) + (bp === 'hills' || bp === 'puente' ? ' ' + Math.round(sum(bikePlan(bp, weekOf(d)).map(function (x) { return x.d; })) / 60) + ' min' : ''); }
   return 'Descanso';
 }
 function openDay(k) {
@@ -1215,7 +1226,7 @@ function openDay(k) {
   }
   if (dn.b || ty === 'b' || ty === 'bs') {
     var bp = dn.b || bikeFor(d), segs = bikePlan(bp, weekOf(d)), tot = sum(segs.map(function (x) { return x.d; }));
-    h += '<h3 style="margin-top:6px">Bici · ' + planName(bp) + (bp === 'hills' ? ' · ' + Math.round(tot / 60) + ' min' : '') + '</h3><div class="tbl"><table><thead><tr><th>Tramo</th><th>Min</th><th>Pend.</th><th>Cadencia</th></tr></thead><tbody>';
+    h += '<h3 style="margin-top:6px">Bici · ' + planName(bp) + (bp === 'hills' || bp === 'puente' ? ' · ' + Math.round(tot / 60) + ' min' : '') + '</h3><div class="tbl"><table><thead><tr><th>Tramo</th><th>Min</th><th>Pend.</th><th>Cadencia</th></tr></thead><tbody>';
     segs.forEach(function (x) { h += '<tr><td style="white-space:normal">' + esc(x.n) + '</td><td>' + Math.round(x.d / 60 * 10) / 10 + '</td><td>' + x.g + '%</td><td>' + x.cad[0] + '–' + x.cad[1] + '</td></tr>'; });
     h += '</tbody></table></div>';
   }
