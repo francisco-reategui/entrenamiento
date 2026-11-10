@@ -307,7 +307,7 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
 'use strict';
 var $ = function (id) { return document.getElementById(id); };
 var KEY = 'plan8s-v1';
-var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 15, barMax: 30, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, seed1: false, custom: [] };
+var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 8.25, barMax: 16.5, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, seed1: false, custom: [] };
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function load() {
   var d = clone(DEF);
@@ -442,6 +442,13 @@ var V = {
   curl_h_s: { n: 'Curl martillo lento', eq: 'db', t: 'reps', fig: 'curl', tempo: '3 s bajando', d: 'Curl con las palmas mirándose entre sí, bajando en 3 segundos.', e: 'Mover los codos.', q: 'curl martillo' },
   tri_floor_s: { n: 'Tríceps acostado lento', eq: 'db', t: 'reps', fig: 'tri', tempo: '3 s bajando', d: 'Tríceps acostado en el piso, bajando las mancuernas en 3 segundos al lado de la cabeza.', e: 'Mover los hombros en vez de los codos.', q: 'extension de triceps acostado mancuernas' },
 
+  flex_inc: { n: 'Flexiones inclinadas', eq: 'bw', t: 'reps', fig: 'pushup', main: 1, rr: [8, 15], tempo: '2 s bajando', d: 'Manos sobre el borde del sillón o una silla firme, cuerpo recto. Baja el pecho hasta el borde y empuja. Es la versión más fácil, para partir.', e: 'Cadera caída. Codos muy abiertos.', q: 'flexiones inclinadas' },
+  flex_p: { n: 'Flexiones con pausa abajo', eq: 'bw', t: 'reps', fig: 'pushup', main: 1, rr: [8, 15], tempo: '3 s bajando · pausa 2 s abajo', d: 'Flexiones normales bajando en 3 segundos y quedándote 2 segundos con el pecho a un par de centímetros del suelo.', e: 'Apoyar el pecho en la pausa.', q: 'flexiones con pausa' },
+  flex_w: { n: 'Flexiones con mochila', eq: 'bw', t: 'reps', fig: 'pushup', main: 1, rr: [8, 15], tempo: '2 s bajando', d: 'Flexiones con una mochila con discos o libros en la espalda. Ajusta las correas para que no se mueva.', e: 'Mochila suelta que se desliza. Cadera caída.', q: 'flexiones con peso mochila' },
+  fly: { n: 'Aperturas en el suelo', eq: 'db', t: 'reps', fig: 'fly', rr: [12, 15], tempo: '3 s bajando', d: 'Acostado en el suelo, rodillas dobladas, mancuernas arriba del pecho con los codos levemente doblados. Abre los brazos hacia los lados hasta que los codos toquen el suelo y vuelve a cerrar arriba apretando el pecho.', e: 'Doblar mucho los codos y convertirlo en press. Soltar los brazos de golpe.', q: 'aperturas con mancuernas en el suelo' },
+  fly_p: { n: 'Aperturas con pausa abajo', eq: 'db', t: 'reps', fig: 'fly', rr: [12, 15], tempo: '3 s bajando · pausa 2 s abajo', d: 'Igual que las aperturas, con 2 segundos de pausa con los codos apoyados en el suelo, estirando el pecho.', e: 'Relajar el pecho en la pausa.', q: 'aperturas en el suelo pausa' },
+  bog_back: { n: 'Bogadora · espalda', eq: 'none', t: 'cardio', fig: 'rower', min: 8, d: 'Alterna 4 veces: 1 minuto remando solo con tronco y brazos, con las piernas estiradas y fijas, apretando 1 segundo al final de cada palada; y 1 minuto con 10 paladas de potencia a fondo y el resto suave.', e: 'Usar las piernas en el minuto de solo tronco y brazos. Encorvar la espalda al tirar.', q: 'remo ergometro ejercicio solo brazos espalda' },
+
   plank: { n: 'Plancha', eq: 'bw', t: 'time', fig: 'plank', d: 'Antebrazos en el suelo, codos bajo los hombros. Cuerpo recto de la cabeza a los talones, abdomen y glúteos apretados. Respira normal.', e: 'Cadera caída o trasero arriba. Aguantar la respiración.', q: 'plancha abdominal tecnica' },
   plank_rkc: { n: 'Plancha apretando todo', eq: 'bw', t: 'time', fig: 'plank', d: 'Igual que la plancha, pero aprieta al máximo abdomen, glúteos y muslos, y tira los codos hacia los pies sin moverlos. Es más corta y mucho más intensa.', e: 'Soltar la tensión a mitad de tiempo.', q: 'RKC plank' }
 };
@@ -462,24 +469,30 @@ var SL = {
   calf: { n: 'Pantorrillas', lv: ['calf', 'calf_1', 'calf_1p'], alt: ['calf_seat'] },
   lat: { n: 'Hombro lateral', lv: ['lateral', 'lateral_s', 'lateral_1'], alt: [] },
   curlA: { n: 'Bíceps (martillo)', lv: ['curl_h', 'curl_h_s'], alt: ['curl', 'curl_bar'] },
-  triA: { n: 'Tríceps acostado', lv: ['tri_floor', 'tri_floor_s'], alt: ['tri_oh'] }
+  triA: { n: 'Tríceps acostado', lv: ['tri_floor', 'tri_floor_s'], alt: ['tri_oh'] },
+  chestB: { n: 'Pecho (flexiones)', lv: ['pushup', 'pushup_e', 'flex_p', 'flex_w'], alt: ['flex_inc'] },
+  fly: { n: 'Pecho (aperturas)', lv: ['fly', 'fly_p'], alt: [] },
+  coolB: { n: 'Cierre de espalda', lv: ['bog_back'], alt: ['bog_cool', 'bike_cool'] }
 };
-var RT = { A: ['warm', 'legs', 'push', 'pull', 'glute', 'chin', 'lat', 'curlA', 'triA', 'calf', 'cool'], B: ['warm', 'hinge', 'ohp', 'chin', 'curl', 'tri', 'glute1', 'core', 'calf', 'cool'] };
+var RT = { A: ['warm', 'legs', 'push', 'fly', 'pull', 'glute', 'chin', 'lat', 'curlA', 'triA', 'calf', 'cool'], B: ['warm', 'hinge', 'ohp', 'chestB', 'chin', 'curl', 'tri', 'glute1', 'core', 'calf', 'coolB'] };
 function cur(slot) { var c = ST.choice[slot]; return (c && V[c]) ? c : SL[slot].lv[0]; }
 function planFor(slot) {
   var v = cur(slot), x = V[v], ph = phase(weekNum());
-  if (x.t === 'cardio') { var m = slot === 'cool' ? (ph.w <= 2 || ph.w === 6 ? 5 : 8) : 5; return { v: v, x: x, sets: 1, min: m, rest: 45 }; }
+  if (x.t === 'cardio') { var m = x.min || (slot === 'cool' ? (ph.w <= 2 || ph.w === 6 ? 5 : 8) : 5); return { v: v, x: x, sets: 1, min: m, rest: 45 }; }
   var sets = x.csets || (x.main ? ph.mainSets : ph.sets);
   if (x.t === 'time') return { v: v, x: x, sets: sets, secs: x.csec || tsec(v, ph.w), rest: x.rest || 60 };
+  var tope = x.eq === 'db' ? ST.settings.dbMax : x.eq === 'bar' ? ST.settings.barMax : null;
+  if (tope != null && ST.kg[v] != null && ST.kg[v] >= tope) return { v: v, x: x, sets: sets, rr: [15, 20], topeo: true, rest: x.rest || (x.main ? 90 : 60) };
   return { v: v, x: x, sets: sets, rr: x.rr || (x.leg ? ph.leg : ph.reps), rest: x.rest || (x.main ? 90 : 60) };
 }
 function zr(z) { var m = ST.settings.hrmax, lo = [0, 0.5, 0.6, 0.7, 0.8, 0.9][z], hi = [0, 0.6, 0.7, 0.8, 0.9, 1][z]; return [Math.round(lo * m), Math.round(hi * m)]; }
 function targetText(slot, p, ph) {
+  if (p.x.t === 'cardio' && p.x.min) return p.min + ' min · intervalos, mira Técnica';
   if (p.x.t === 'cardio') { var z = slot === 'warm' ? 'zona 1–2' : 'zona 2 (' + zr(2)[0] + '–' + zr(2)[1] + ' lpm)'; return p.min + ' min · ' + z; }
   if (p.x.t === 'time') return p.sets + ' × ' + p.secs + ' s';
   var s = p.sets + ' × ' + p.rr[0] + '–' + p.rr[1] + (p.x.uni ? ' por lado' : '');
   if (p.x.tempo) s += ' · ' + p.x.tempo;
-  return s + ' · ' + ph.rir;
+  return s + ' · ' + (p.topeo ? 'peso al tope: llega cerca del fallo, sobran 1–2' : ph.rir);
 }
 
 /* ---------- figuras ---------- */
@@ -510,6 +523,7 @@ var FIG = {
   tri: function () { var d = 2.8; return G(127) + '<circle class="h" cx="100" cy="42" r="9"/>' + S('M100,52 L100,92 M100,92 L94,125 M100,92 L106,125') + P('M100,56 L106,30 L92,44', 'M100,56 L106,30 L106,10', d) + W(92, 44, 106, 10, d); },
   calf: function () { var d = 2.2; return G(127) + H(100, 28, 100, 20, d) + P('M100,40 L100,80', 'M100,32 L100,72', d) + P('M100,80 L100,122 L112,126', 'M100,72 L102,114 L112,126', d) + P('M100,44 L101,64 L102,84', 'M100,36 L101,56 L102,76', d) + W(102, 86, 102, 78, d); },
   lateral: function () { var d = 2.6; return G(127) + '<circle class="h" cx="100" cy="26" r="9"/>' + S('M100,36 L100,80 M100,80 L90,125 M100,80 L110,125') + P('M100,42 L96,62 L94,82', 'M100,42 L122,44 L144,46', d) + P('M100,42 L104,62 L106,82', 'M100,42 L78,44 L56,46', d) + W(94, 84, 146, 46, d) + W(106, 84, 54, 46, d); },
+  fly: function () { var d = 3.2; return G(115) + '<circle class="h" cx="38" cy="102" r="9"/>' + S('M48,106 L108,106 M108,106 L128,84 L144,106') + P('M62,106 L84,110 L104,110', 'M62,106 L64,82 L62,58', d) + W(104, 108, 62, 56, d); },
   plank: function () { var d = 2.4; return G(125) + '<circle class="h" cx="46" cy="98" r="9"/>' + S('M62,100 L62,118 L88,118') + P('M62,100 L116,106 L172,120', 'M62,100 L116,102 L172,120', d); }
 };
 function svgFig(k) { return '<svg viewBox="0 0 200 140" aria-hidden="true">' + (FIG[k] ? FIG[k]() : '') + '</svg>'; }
@@ -1233,6 +1247,7 @@ tickClock();
 setInterval(function () { tickClock(); renderHR(); if (TAB === 'f') drawStrip(); if (TAB === 'b') drawB(); }, 1000);
 window.addEventListener('resize', function () { if (TAB === 'f') drawStrip(); if (TAB === 'b') drawB(); if (TAB === 'p') drawBody(ST.body.slice().sort(function (x, y) { return x.d < y.d ? -1 : 1; })); });
 
+if (ST.settings.dbMax === 15 && ST.settings.barMax === 30) { ST.settings.dbMax = 8.25; ST.settings.barMax = 16.5; save(); }
 if (ST.settings.start === '2026-11-03') { ST.settings.start = '2026-11-02'; save(); }
 if (!ST.seed1) { if (!ST.marks['2026-11-03'] && !ST.hist.length) ST.marks['2026-11-03'] = { t: 'f', r: 'A' }; ST.seed1 = true; save(); }
 FZ.routine = nextRoutine();
