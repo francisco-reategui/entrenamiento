@@ -386,6 +386,7 @@ var V = {
 
   split: { n: 'Sentadilla dividida', eq: 'db', t: 'reps', fig: 'split', leg: 1, main: 1, uni: 1, tempo: '3 s bajando', d: 'Un pie adelante y otro atrás, a un paso largo, con una mancuerna en cada mano. Baja en 3 segundos hasta que la rodilla de atrás casi toque el suelo y sube empujando con el talón de adelante. Inclina un poco el tronco hacia adelante para cargar el glúteo.', e: 'Rodilla de adelante que se va hacia adentro. Paso muy corto. Rebotar abajo.', q: 'split squat con mancuernas tecnica' },
   split_p: { n: 'Sentadilla dividida con pausa', eq: 'db', t: 'reps', fig: 'split', leg: 1, main: 1, uni: 1, tempo: '3 s bajando · pausa 2 s abajo', d: 'Igual que la sentadilla dividida, pero quédate 2 segundos abajo, sin apoyar la rodilla, antes de subir.', e: 'Apoyar la rodilla en la pausa. Subir con impulso.', q: 'split squat pausa' },
+  goblet_p: { n: 'Sentadilla goblet con pausa', eq: 'db', t: 'reps', fig: 'squat', leg: 1, main: 1, tempo: '4 s bajando · pausa 3 s', d: 'Una mancuerna vertical contra el pecho, pies al ancho de los hombros. Baja en 4 segundos, quédate 3 segundos abajo con el pecho arriba y sube rápido.', e: 'Rebotar abajo. Talones que se levantan. Rodillas hacia adentro.', q: 'sentadilla goblet pausa' },
   bulg: { n: 'Sentadilla búlgara', eq: 'db', t: 'reps', fig: 'split', leg: 1, main: 1, uni: 1, tempo: '3 s bajando', d: 'Empeine del pie de atrás sobre un sillón firme y el pie de adelante a un paso largo. Baja en 3 segundos y sube empujando con el pie de adelante. Tronco levemente inclinado para cargar el glúteo.', e: 'Pie de adelante muy cerca del sillón. Perder el equilibrio por apurarse.', q: 'sentadilla bulgara mancuernas gluteo' },
   bulg_p: { n: 'Búlgara con pausa', eq: 'db', t: 'reps', fig: 'split', leg: 1, main: 1, uni: 1, tempo: '3 s bajando · pausa 2 s abajo', d: 'Igual que la búlgara, con 2 segundos de pausa abajo.', e: 'Apoyar la rodilla en la pausa.', q: 'sentadilla bulgara pausa' },
   rev_lunge: { n: 'Zancada hacia atrás', eq: 'db', t: 'reps', fig: 'split', leg: 1, main: 1, uni: 1, tempo: '2 s bajando', d: 'De pie con una mancuerna en cada mano. Da un paso largo hacia atrás, baja hasta casi tocar el suelo con la rodilla y vuelve. Termina un lado y después el otro.', e: 'Tronco que se va hacia adelante sin control. Paso corto.', q: 'zancada inversa mancuernas' },
@@ -457,6 +458,8 @@ var V = {
 var SL = {
   warm: { n: 'Calentamiento', lv: ['bog_warm'], alt: ['bike_warm'] },
   cool: { n: 'Cierre', lv: ['bog_cool'], alt: ['bike_cool'] },
+  squatA: { n: 'Sentadilla', lv: ['goblet_t', 'goblet_p'], alt: [] },
+  bulgA: { n: 'Sentadilla búlgara', lv: ['bulg', 'bulg_p'], alt: ['split', 'rev_lunge'] },
   legs: { n: 'Piernas', lv: ['split', 'split_p', 'bulg', 'bulg_p'], alt: ['rev_lunge', 'goblet_t'] },
   glute: { n: 'Glúteos', lv: ['bridge', 'bridge_p', 'bridge_1'], alt: ['rev_lunge'] },
   hinge: { n: 'Bisagra de cadera', lv: ['rdl_bar', 'rdl_p', 'rdl_1'], alt: ['rdl_db'] },
@@ -477,7 +480,7 @@ var SL = {
   coolB: { n: 'Cierre de espalda', lv: ['bog_back'], alt: ['bog_cool', 'bike_cool'] },
   mob: { n: 'Movilidad', lv: ['mob'], alt: [] }
 };
-var RT = { A: ['warm', 'legs', 'push', 'fly', 'pull', 'glute', 'chin', 'lat', 'curlA', 'triA', 'calf', 'cool', 'mob'], B: ['warm', 'hinge', 'ohp', 'chestB', 'chin', 'curl', 'tri', 'glute1', 'core', 'calf', 'coolB', 'mob'] };
+var RT = { A: ['warm', 'squatA', 'bulgA', 'push', 'fly', 'pull', 'glute', 'chin', 'lat', 'curlA', 'triA', 'calf', 'cool', 'mob'], B: ['warm', 'hinge', 'ohp', 'chestB', 'chin', 'curl', 'tri', 'glute1', 'core', 'calf', 'coolB', 'mob'] };
 function cur(slot) { var c = ST.choice[slot]; return (c && V[c]) ? c : SL[slot].lv[0]; }
 function planFor(slot) {
   var v = cur(slot), x = V[v], ph = phase(weekNum());
@@ -873,7 +876,7 @@ function drawStrip() {
 }
 
 /* ---------- BICI ---------- */
-function seg(d, g, c, z, n) { return { d: d, g: g, cad: c, z: z, n: n }; }
+function seg(d, g, c, z, n, kj) { return { d: d, g: g, cad: c, z: z, n: n, kj: kj || 0 }; }
 function bikePlan(id, w) {
   var s = [];
   if (id === 'base30') return [seg(300, 0, [85, 95], [1, 2], 'Calentamiento'), seg(1200, 2, [80, 90], [2, 2], 'Base zona 2'), seg(300, 0, [85, 95], [1, 1], 'Vuelta a la calma')];
@@ -881,7 +884,7 @@ function bikePlan(id, w) {
     var n = w <= 3 ? 6 : w === 4 ? 8 : w === 5 ? 10 : w === 6 ? 5 : w === 7 ? 10 : 12;
     var gp = w <= 4 ? 5 : w === 6 ? 4 : 6;
     s.push(seg(300, 0, [85, 95], [1, 2], 'Calentamiento')); s.push(seg(180, 2, [80, 90], [2, 2], 'Calentamiento en subida'));
-    for (var q = 0; q < n; q++) { s.push(seg(45, gp, [75, 85], [4, 4], 'Puente ' + (q + 1) + ' de ' + n + ' · a fondo')); s.push(seg(75, 0, [90, 100], [1, 2], 'Bajada · suelto')); }
+    for (var q = 0; q < n; q++) { s.push(seg(60, gp, [75, 85], [4, 4], 'Puente ' + (q + 1) + ' de ' + n + ' · a fondo', gp === 4 ? 6 : gp === 6 ? 8 : 7)); s.push(seg(75, 0, [90, 100], [1, 2], 'Bajada · suelto')); }
     s.push(seg(360, 0, [85, 95], [1, 1], 'Vuelta a la calma'));
     return s;
   }
@@ -897,7 +900,7 @@ function bikePlan(id, w) {
   return s;
 }
 var PLANS = [{ id: 'base30', n: 'Base' }, { id: 'base45', n: 'Base' }, { id: 'puente', n: 'Puente' }, { id: 'hills', n: 'Subidas' }];
-var BS = { plan: ST.bplan || 'base30', segs: [], run: false, acc: 0, rs: 0, seg: -1, sess: null, lastSample: 0 };
+var BS = { segJ: 0, lastT: 0, plan: ST.bplan || 'base30', segs: [], run: false, acc: 0, rs: 0, seg: -1, sess: null, lastSample: 0 };
 function bTotal() { return sum(BS.segs.map(function (s) { return s.d; })); }
 function bElapsed() { return BS.acc + (BS.run ? Date.now() - BS.rs : 0); }
 function segAt(ms) { var t = ms / 1000, a = 0; for (var k = 0; k < BS.segs.length; k++) { a += BS.segs[k].d; if (t < a) return k; } return BS.segs.length - 1; }
@@ -907,10 +910,13 @@ function setPlan(id) {
   var h = ''; PLANS.forEach(function (p) { var m = Math.round(sum(bikePlan(p.id, weekNum()).map(function (s) { return s.d; })) / 60); h += '<button type="button" class="chip" data-plan="' + p.id + '" aria-pressed="' + (p.id === id) + '">' + p.n + ' ' + m + ' min</button>'; });
   $('bPlans').innerHTML = h;
   Array.prototype.forEach.call($('bPlans').querySelectorAll('[data-plan]'), function (b) { b.addEventListener('click', function () { if (BS.sess) { toast('Termina la sesión actual para cambiar de plan.'); return; } setPlan(b.getAttribute('data-plan')); }); });
+  drawTL();
+  renderB();
+}
+function drawTL() {
   var tot = bTotal(), tl = '';
   BS.segs.forEach(function (s) { tl += '<i style="width:' + (s.d / tot * 100) + '%;background:var(--z' + Math.max(1, Math.min(5, s.z[1])) + ');opacity:' + (0.35 + s.g / 30) + '"></i>'; });
   $('bTL').innerHTML = tl + '<span class="pos" id="bPos"></span>';
-  renderB();
 }
 function renderB() {
   var e = bElapsed(), k = segAt(e), s = BS.segs[k], tot = bTotal(), now = Date.now();
@@ -927,7 +933,7 @@ function renderB() {
     var zz = s.z[0] === s.z[1] ? 'zona ' + s.z[0] : 'zona ' + s.z[0] + '–' + s.z[1];
     var zrng = zr(s.z[0])[0] + '–' + zr(s.z[1])[1];
     $('bSegN').textContent = (k + 1) + '/' + BS.segs.length + ' · ' + s.n;
-    $('bSegT').textContent = s.g + '% · cadencia ' + s.cad[0] + '–' + s.cad[1] + ' · ' + zz + ' (' + zrng + ')';
+    $('bSegT').textContent = s.g + '% · cadencia ' + s.cad[0] + '–' + s.cad[1] + ' · ' + zz + ' (' + zrng + ')' + (s.kj ? ' · meta ' + (BS.segJ / 1e6).toFixed(1) + '/' + s.kj + ' kJ: pedalea más fuerte y termina antes' : '');
     $('bSegR').textContent = fmtS(Math.max(0, segStart(k) + s.d - e / 1000));
     var nx = BS.segs[k + 1];
     $('bSegX').textContent = (nx ? 'Sigue: ' + nx.n + ' · ' + nx.g + '% · ' + fmtS(nx.d) : 'Último tramo') + ' · total ' + fmtS(e / 1000) + ' de ' + fmtS(tot);
@@ -938,9 +944,15 @@ function renderB() {
 }
 function bTick() {
   if (!BS.sess) return;
-  var e = bElapsed(), k = segAt(e);
+  var e = bElapsed(), k = segAt(e), nw = Date.now(), dt = nw - BS.lastT; BS.lastT = nw;
+  if (BS.run && BS.seg === k && dt < 2000 && nw - BK.tw < 3000 && BK.w != null) BS.segJ += BK.w * dt;
+  var cs = BS.segs[k];
+  if (BS.run && BS.seg === k && cs.kj && BS.segJ >= cs.kj * 1e6) {
+    var inSeg = e / 1000 - segStart(k);
+    if (inSeg >= 25 && k < BS.segs.length - 1) { cs.d = Math.round(inSeg * 10) / 10; drawTL(); k = segAt(e); }
+  }
   if (k !== BS.seg) {
-    BS.seg = k; var s = BS.segs[k]; setGrade(s.g); beep(2);
+    BS.seg = k; BS.segJ = 0; var s = BS.segs[k]; setGrade(s.g); beep(2);
     speak('Tramo ' + (k + 1) + '. ' + s.n + '. Pendiente ' + s.g + ' por ciento. Cadencia ' + s.cad[0] + ' a ' + s.cad[1] + '.');
   }
   if (BS.run && Date.now() - BS.lastSample >= 1000) {
@@ -1294,7 +1306,7 @@ var lastDay = dkey(new Date());
 setInterval(function () { var k = dkey(new Date()); if (k !== lastDay) { lastDay = k; renderWeek(); if (!FZ.sess) renderF(); } }, 60000);
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
-window.__app = { ST: ST, FZ: FZ, BS: BS, BK: BK, HR: HR, onHr: onHr, renderF: renderF, renderWeek: renderWeek, nextRoutine: nextRoutine };
+window.__app = { ST: ST, FZ: FZ, BS: BS, BK: BK, HR: HR, onHr: onHr, renderF: renderF, renderWeek: renderWeek, nextRoutine: nextRoutine, bikePlan: bikePlan, bTick: bTick, setPlan: setPlan, planFor: planFor, itemsFor: itemsFor, bTotal: bTotal };
 })();
 </script>
 </body></html>
