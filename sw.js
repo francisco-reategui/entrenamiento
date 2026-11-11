@@ -1,5 +1,5 @@
 // Plan 8 Semanas: funciona sin internet y se actualiza sola cuando hay conexión.
-const CACHE = 'plan8s-v10';
+const CACHE = 'plan8s-v11';
 const FILES = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 
 self.addEventListener('install', (e) => {

@@ -265,6 +265,10 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
     </div>
     <div class="card"><h3>Historial</h3><div class="hist" id="hist"></div>
       <div class="btns" style="margin-top:8px"><button type="button" id="dlCsv">Descargar historial (CSV)</button></div></div>
+    <div class="card"><h3>Mis pesos</h3>
+      <p class="muted" style="margin:0 0 8px;font-size:.85rem">Deja aquí el peso de cada ejercicio (el de la mancuerna que usas, o el total de la barra). En la rutina cada ejercicio parte con ese peso; si lo cambias allá, queda guardado.</p>
+      <div id="pwList"></div>
+    </div>
     <div class="card"><h3>Mis ejercicios</h3>
       <p class="muted" style="margin:0 0 8px;font-size:.85rem">Agrega un ejercicio a la rutina A, a la B o a las dos. Se pone antes del cierre en la bogadora.</p>
       <div id="cuList"></div>
@@ -288,7 +292,7 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
         <label for="sMax">Pulso máximo (lpm)</label><input class="inp" id="sMax" inputmode="numeric">
         <label for="sRec">Recuperado bajo (lpm)</label><input class="inp" id="sRec" inputmode="numeric">
         <label for="sAl">Aviso de pulso alto (lpm)</label><input class="inp" id="sAl" inputmode="numeric">
-        <label for="sDb">Tope mancuerna (kg por mano)</label><input class="inp" id="sDb" inputmode="decimal">
+        <label for="sDb">Tope mancuerna (kg, la que usas)</label><input class="inp" id="sDb" inputmode="decimal">
         <label for="sBar">Tope barra (kg)</label><input class="inp" id="sBar" inputmode="decimal">
         <label for="sVoice">Voz en la bici</label><select class="inp" id="sVoice"><option value="1">Sí</option><option value="0">No</option></select>
       </div>
@@ -307,7 +311,7 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
 'use strict';
 var $ = function (id) { return document.getElementById(id); };
 var KEY = 'plan8s-v1';
-var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 8.25, barMax: 16.5, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, seed1: false, custom: [] };
+var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 16.5, barMax: 16.5, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, seed1: false, custom: [] };
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function load() {
   var d = clone(DEF);
@@ -737,7 +741,7 @@ function renderF() {
   $('fTarget').textContent = targetText(slot, p, ph);
   var kg = x.eq === 'db' || x.eq === 'bar';
   $('kgRow').hidden = !kg;
-  if (kg) { if (document.activeElement !== $('kgIn')) $('kgIn').value = ST.kg[p.v] != null ? ST.kg[p.v] : ''; $('kgU').textContent = x.eq === 'db' ? 'kg por mano' : 'kg en la barra'; }
+  if (kg) { if (document.activeElement !== $('kgIn')) $('kgIn').value = ST.kg[p.v] != null ? ST.kg[p.v] : ''; $('kgU').textContent = x.eq === 'db' ? 'kg en la mancuerna' : 'kg en la barra'; }
   var sg = suggest(slot, p); FZ.sug = sg; $('fSug').hidden = !sg; if (sg) $('fSug').textContent = sg.text;
   $('fSwap').disabled = (SL[slot].lv.length + SL[slot].alt.length) < 2;
   $('fAB').textContent = 'Rutina ' + FZ.routine; $('fAB').disabled = !!FZ.sess;
@@ -774,6 +778,7 @@ function renderFT() {
 function fMain() {
   initAudio();
   if (FZ.mode === 'run') { fStop(); return; }
+  if (Date.now() - (FZ.kgT || 0) < 900) return;
   if (!FZ.sess) { FZ.sess = { type: 'fuerza', routine: FZ.routine, week: weekNum(), start: Date.now(), sets: [], hr: [] }; wakeOn(); }
   FZ.mode = 'run'; FZ.t0 = Date.now(); FZ.hrSet = []; FZ.doneBeep = false; FZ.lastSet = null; renderF();
 }
@@ -829,12 +834,13 @@ $('fMain').addEventListener('click', fMain);
 $('rM').addEventListener('click', function () { if (FZ.lastSet && FZ.lastSet.reps > 0) { FZ.lastSet.reps--; renderFT(); } });
 $('rP').addEventListener('click', function () { if (FZ.lastSet) { FZ.lastSet.reps++; renderFT(); } });
 function kgStep(dir) {
-  var p = planFor(its()[FZ.idx]), st = p.x.eq === 'bar' ? 2 : 1, v = parseFloat(String($('kgIn').value).replace(',', '.'));
-  if (isNaN(v)) v = p.x.eq === 'bar' ? 20 : 10; v = Math.max(0, Math.round((v + dir * st) * 2) / 2);
+  FZ.kgT = Date.now(); var p = planFor(its()[FZ.idx]), st = 0.5, v = parseFloat(String($('kgIn').value).replace(',', '.'));
+  if (isNaN(v)) v = p.x.eq === 'bar' ? 12 : 8; v = Math.max(0, Math.round((v + dir * st) * 2) / 2);
   $('kgIn').value = v; ST.kg[p.v] = v; save();
 }
 $('kgM').addEventListener('click', function () { kgStep(-1); });
 $('kgP').addEventListener('click', function () { kgStep(1); });
+['focus', 'blur', 'input'].forEach(function (ev) { $('kgIn').addEventListener(ev, function () { FZ.kgT = Date.now(); }); });
 $('kgIn').addEventListener('change', function () { var p = planFor(its()[FZ.idx]), v = parseFloat(String(this.value).replace(',', '.')); if (!isNaN(v) && v >= 0 && v <= 300) { ST.kg[p.v] = v; save(); } else if (this.value !== '') { toast('Kilos fuera de rango: revisa el dato.'); } });
 function fGo(k) { if (FZ.mode === 'run') { toast('Termina la serie con Stop antes de cambiar de ejercicio.'); return; } FZ.idx = Math.max(0, Math.min(its().length - 1, k)); if (FZ.mode === 'rest') FZ.mode = 'idle'; renderF(); }
 $('fPrev').addEventListener('click', function () { fGo(FZ.idx - 1); });
@@ -1080,9 +1086,28 @@ function renderP() {
   });
   $('hist').innerHTML = hh || '<p class="muted" style="margin:0">Todavía no hay sesiones guardadas.</p>';
   Array.prototype.forEach.call($('hist').querySelectorAll('[data-h]'), function (x) { x.addEventListener('click', function () { showSummary(ST.hist[+x.getAttribute('data-h')]); }); });
-  renderCu();
+  renderPw(); renderCu();
   var S = ST.settings; $('sStart').value = S.start; $('sMax').value = S.hrmax; $('sRec').value = S.rec; $('sAl').value = S.alert; $('sDb').value = S.dbMax; $('sBar').value = S.barMax; $('sVoice').value = S.voice ? '1' : '0';
 }
+function renderPw() {
+  var seen = {}, h = '';
+  itemsFor('A').concat(itemsFor('B')).forEach(function (slot) {
+    var p = planFor(slot), x = p.x; if (!(x.eq === 'db' || x.eq === 'bar') || seen[p.v]) return; seen[p.v] = 1;
+    h += '<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0"><span style="flex:1;min-width:0"><b>' + esc(x.n) + '</b><br><span class="muted" style="font-size:.8rem">' + (x.eq === 'db' ? 'kg en la mancuerna' : 'kg en la barra') + '</span></span>' +
+      '<button type="button" class="sb" data-pwm="' + p.v + '" aria-label="Menos kilos">−</button><input class="kgi" data-pwi="' + p.v + '" inputmode="decimal" placeholder="kg" value="' + (ST.kg[p.v] != null ? ST.kg[p.v] : '') + '" aria-label="Kilos de ' + esc(x.n) + '"><button type="button" class="sb" data-pwp="' + p.v + '" aria-label="Más kilos">+</button></div>';
+  });
+  $('pwList').innerHTML = h;
+}
+function pwSet(v, val) { ST.kg[v] = Math.max(0, Math.min(300, val)); save(); }
+$('pwList').addEventListener('click', function (e) {
+  var m = e.target.getAttribute && e.target.getAttribute('data-pwm'), q = e.target.getAttribute && e.target.getAttribute('data-pwp'), v = m || q; if (!v) return;
+  var cur = ST.kg[v] != null ? ST.kg[v] : 0; pwSet(v, Math.round((cur + (q ? 0.5 : -0.5)) * 2) / 2); renderPw(); renderF();
+});
+$('pwList').addEventListener('change', function (e) {
+  var v = e.target.getAttribute && e.target.getAttribute('data-pwi'); if (!v) return;
+  var n = parseFloat(String(e.target.value).replace(',', '.')); if (isNaN(n) || n < 0 || n > 300) { toast('Kilos fuera de rango: revisa el dato.'); renderPw(); return; }
+  pwSet(v, n); renderPw(); renderF();
+});
 function drawBody(b) {
   var cv = $('bdChart'), f = fit(cv), c = f.c, Wd = f.w, Ht = f.h; c.clearRect(0, 0, Wd, Ht);
   var muted = cssv('--muted'); c.font = '11px ' + cssv('--body'); c.fillStyle = muted;
@@ -1291,6 +1316,7 @@ tickClock();
 setInterval(function () { tickClock(); renderHR(); if (TAB === 'f') drawStrip(); if (TAB === 'b') drawB(); }, 1000);
 window.addEventListener('resize', function () { if (TAB === 'f') drawStrip(); if (TAB === 'b') drawB(); if (TAB === 'p') drawBody(ST.body.slice().sort(function (x, y) { return x.d < y.d ? -1 : 1; })); });
 
+if (!ST.settings.dbv2) { if (ST.settings.dbMax === 8.25) ST.settings.dbMax = 16.5; ST.settings.dbv2 = 1; save(); }
 if (ST.settings.dbMax === 15 && ST.settings.barMax === 30) { ST.settings.dbMax = 8.25; ST.settings.barMax = 16.5; save(); }
 if (ST.settings.start === '2026-11-03') { ST.settings.start = '2026-11-02'; save(); }
 if (!ST.seed1) { if (!ST.marks['2026-11-03'] && !ST.hist.length) ST.marks['2026-11-03'] = { t: 'f', r: 'A' }; ST.seed1 = true; save(); }
