@@ -884,7 +884,7 @@ function bikePlan(id, w) {
     var n = w <= 3 ? 6 : w === 4 ? 8 : w === 5 ? 10 : w === 6 ? 5 : w === 7 ? 10 : 12;
     var gp = w <= 4 ? 5 : w === 6 ? 4 : 6;
     s.push(seg(300, 0, [85, 95], [1, 2], 'Calentamiento')); s.push(seg(180, 2, [80, 90], [2, 2], 'Calentamiento en subida'));
-    for (var q = 0; q < n; q++) { s.push(seg(60, gp, [75, 85], [4, 4], 'Puente ' + (q + 1) + ' de ' + n + ' · a fondo', gp === 4 ? 6 : gp === 6 ? 8 : 7)); s.push(seg(75, 0, [90, 100], [1, 2], 'Bajada · suelto')); }
+    for (var q = 0; q < n; q++) { s.push(seg(60, gp, [75, 85], [4, 4], 'Puente ' + (q + 1) + ' de ' + n + ' · a fondo', 8.5)); s.push(seg(75, 0, [90, 100], [1, 2], 'Bajada · suelto')); }
     s.push(seg(360, 0, [85, 95], [1, 1], 'Vuelta a la calma'));
     return s;
   }
