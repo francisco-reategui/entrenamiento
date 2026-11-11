@@ -879,24 +879,24 @@ function drawStrip() {
 function seg(d, g, c, z, n, kj) { return { d: d, g: g, cad: c, z: z, n: n, kj: kj || 0 }; }
 function bikePlan(id, w) {
   var s = [];
-  if (id === 'base30') return [seg(300, 0, [85, 95], [1, 2], 'Calentamiento'), seg(1200, 2, [80, 90], [2, 2], 'Base zona 2'), seg(300, 0, [85, 95], [1, 1], 'Vuelta a la calma')];
+  if (id === 'base30') return [seg(300, 1, [85, 95], [1, 2], 'Calentamiento'), seg(1200, 2, [80, 90], [2, 2], 'Base zona 2'), seg(300, 1, [85, 95], [1, 1], 'Vuelta a la calma')];
   if (id === 'puente') {
     var n = w <= 3 ? 6 : w === 4 ? 8 : w === 5 ? 10 : w === 6 ? 5 : w === 7 ? 10 : 12;
     var gp = w <= 4 ? 5 : w === 6 ? 4 : 6;
-    s.push(seg(300, 0, [85, 95], [1, 2], 'Calentamiento')); s.push(seg(180, 2, [80, 90], [2, 2], 'Calentamiento en subida'));
-    for (var q = 0; q < n; q++) { s.push(seg(60, gp, [75, 85], [4, 4], 'Puente ' + (q + 1) + ' de ' + n + ' · a fondo', 8.5)); s.push(seg(75, 0, [90, 100], [1, 2], 'Bajada · suelto')); }
-    s.push(seg(360, 0, [85, 95], [1, 1], 'Vuelta a la calma'));
+    s.push(seg(300, 1, [85, 95], [1, 2], 'Calentamiento')); s.push(seg(180, 2, [80, 90], [2, 2], 'Calentamiento en subida'));
+    for (var q = 0; q < n; q++) { s.push(seg(60, gp, [75, 85], [4, 4], 'Puente ' + (q + 1) + ' de ' + n + ' · a fondo', 8.5)); s.push(seg(75, 1, [90, 100], [1, 2], 'Bajada · suelto')); }
+    s.push(seg(360, 1, [85, 95], [1, 1], 'Vuelta a la calma'));
     return s;
   }
-  if (id === 'base45') { s.push(seg(300, 0, [85, 95], [1, 2], 'Calentamiento')); for (var k = 0; k < 7; k++) s.push(seg(300, k % 2 ? 4 : 2, [80, 90], [2, 2], 'Base zona 2')); s.push(seg(300, 0, [85, 95], [1, 1], 'Vuelta a la calma')); return s; }
+  if (id === 'base45') { s.push(seg(300, 1, [85, 95], [1, 2], 'Calentamiento')); for (var k = 0; k < 7; k++) s.push(seg(300, k % 2 ? 4 : 2, [80, 90], [2, 2], 'Base zona 2')); s.push(seg(300, 1, [85, 95], [1, 1], 'Vuelta a la calma')); return s; }
   var reps, g, on, cal, calma;
   if (w <= 2) { reps = 3; g = 10; on = 240; cal = [300, 300]; calma = 300; }
   else if (w === 6) { reps = 3; g = 12; on = 240; cal = [300, 300]; calma = 300; }
   else if (w <= 5) { reps = 5; g = 15; on = 240; cal = [300, 300]; calma = 300; }
   else { reps = 5; g = 15; on = 300; cal = [240, 180]; calma = 180; }
-  s.push(seg(cal[0], 0, [85, 95], [1, 2], 'Calentamiento')); s.push(seg(cal[1], 3, [80, 90], [2, 2], 'Calentamiento en subida'));
-  for (var r = 0; r < reps; r++) { s.push(seg(on, g, [55, 65], [3, 4], 'Subida ' + (r + 1) + ' de ' + reps)); s.push(seg(120, 0, [85, 95], [1, 2], 'Recuperación')); }
-  s.push(seg(calma, 0, [85, 95], [1, 1], 'Vuelta a la calma'));
+  s.push(seg(cal[0], 1, [85, 95], [1, 2], 'Calentamiento')); s.push(seg(cal[1], 3, [80, 90], [2, 2], 'Calentamiento en subida'));
+  for (var r = 0; r < reps; r++) { s.push(seg(on, g, [55, 65], [3, 4], 'Subida ' + (r + 1) + ' de ' + reps)); s.push(seg(120, 1, [85, 95], [1, 2], 'Recuperación')); }
+  s.push(seg(calma, 1, [85, 95], [1, 1], 'Vuelta a la calma'));
   return s;
 }
 var PLANS = [{ id: 'base30', n: 'Base' }, { id: 'base45', n: 'Base' }, { id: 'puente', n: 'Puente' }, { id: 'hills', n: 'Subidas' }];
