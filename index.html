@@ -303,6 +303,7 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
         <label for="sAl">Aviso de pulso alto (lpm)</label><input class="inp" id="sAl" inputmode="numeric">
         <label for="sDb">Tope mancuerna (kg, la que usas)</label><input class="inp" id="sDb" inputmode="decimal">
         <label for="sBar">Tope barra (kg)</label><input class="inp" id="sBar" inputmode="decimal">
+        <label for="sMass">Peso ciclista + bici (kg), para la ruta Niebla</label><input class="inp" id="sMass" inputmode="decimal">
         <label for="sVoice">Voz en la bici</label><select class="inp" id="sVoice"><option value="1">Sí</option><option value="0">No</option></select>
       </div>
     </div>
@@ -320,7 +321,7 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
 'use strict';
 var $ = function (id) { return document.getElementById(id); };
 var KEY = 'plan8s-v1';
-var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 16.5, barMax: 16.5, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, seed1: false, custom: [], hang: [] };
+var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 16.5, barMax: 16.5, mass: 92, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, seed1: false, custom: [], hang: [] };
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function load() {
   var d = clone(DEF);
@@ -610,8 +611,8 @@ function bWrite(bytes) {
 function fecMsg(g) { var sl = Math.round((g + 200) * 100), b = [0xA4, 0x09, 0x4E, 0x05, 0x33, 0xFF, 0xFF, 0xFF, 0xFF, sl & 0xFF, (sl >> 8) & 0xFF, 0x50], x = 0; b.forEach(function (v) { x ^= v; }); b.push(x); return b; }
 function ftmsSim(g) { var dv = new DataView(new ArrayBuffer(7)); dv.setUint8(0, 0x11); dv.setInt16(1, 0, true); dv.setInt16(3, Math.round(g * 100), true); dv.setUint8(5, 40); dv.setUint8(6, 51); return Array.prototype.slice.call(new Uint8Array(dv.buffer)); }
 function setGrade(g, manual) {
-  BK.grade = Math.max(0, Math.min(18, Math.round(g)));
-  $('bG').textContent = BK.grade + '%';
+  BK.grade = Math.max(0, Math.min(18, Math.round(g * 2) / 2));
+  $('bG').textContent = String(BK.grade).replace('.', ',') + '%';
   if (!BK.ctl) { if (manual) toast('Conecta la bici para cambiar la pendiente.'); return; }
   bWrite(BK.mode === 'fec' ? fecMsg(BK.grade) : ftmsSim(BK.grade));
 }
@@ -894,8 +895,36 @@ function drawStrip() {
 
 /* ---------- BICI ---------- */
 function seg(d, g, c, z, n, kj) { return { d: d, g: g, cad: c, z: z, n: n, kj: kj || 0 }; }
+/* ruta Valdivia → Niebla (GPX de gpx.studio, 22,4 km). Alturas cada 100 m, sin picos de puentes (mediana ±100 m) y suavizadas a 100 m */
+var NIEBLA = { tot: 22423.4, h: [11.7,11.8,12.2,12.5,12.7,13.1,13.5,14.0,14.3,14.5,14.3,14.3,14.7,14.8,14.5,14.2,14.2,12.2,8.3,4.3,3.3,4.5,4.7,4.0,3.8,3.8,4.2,4.3,4.1,3.8,4.3,6.0,9.6,11.9,11.8,12.0,13.3,14.6,14.8,13.6,9.5,7.8,8.0,9.0,10.8,11.1,11.0,11.9,12.1,10.5,8.9,8.6,8.9,10.8,11.8,12.3,13.1,13.5,12.4,8.7,6.7,3.8,2.3,1.6,1.3,1.0,0.8,1.0,1.9,2.6,3.3,3.9,4.8,11.7,21.0,27.5,33.8,32.3,21.6,15.4,13.3,12.6,12.6,12.8,13.0,13.2,13.7,13.8,13.6,13.2,13.0,13.0,12.7,12.7,12.9,12.9,13.0,13.0,13.5,14.6,14.9,14.7,12.7,4.7,2.2,5.1,12.0,13.5,13.5,13.5,13.4,13.3,13.7,14.8,14.8,11.1,7.6,11.4,12.8,14.0,16.2,18.0,17.7,16.4,15.7,19.9,26.1,30.3,37.6,44.2,50.6,51.7,49.3,40.9,37.2,36.6,35.4,27.2,21.5,19.6,6.7,0.8,0.9,2.5,7.6,11.5,12.3,12.1,9.6,7.1,6.9,8.2,8.9,10.9,14.6,16.9,24.1,27.2,25.2,20.4,19.4,19.0,19.1,23.1,26.1,27.0,26.2,25.3,25.6,25.0,23.7,16.7,10.5,13.1,19.4,20.5,20.2,17.9,16.4,21.5,22.0,18.2,16.3,14.1,10.7,10.4,10.4,13.3,19.1,21.5,18.0,14.2,11.2,6.7,6.1,4.9,3.1,3.4,4.0,6.4,16.7,23.5,29.0,32.5,30.4,23.1,21.8,20.8,19.9,22.4,23.2,23.2,23.8,26.7,28.1,28.8,28.7,27.2,24.1,23.4,20.9,19.8,20.2,20.5,19.0,19.0] };
+var PH = { cda: 0.45, crr: 0.007, rho: 1.2, eta: 0.97 };
+function km1(m) { return (m / 1000).toFixed(1).replace('.', ','); }
+function vVirt(w, g) {
+  if (w == null || w < 10) return 0;
+  var m = ST.settings.mass || 92, th = Math.atan(g / 100), F = m * 9.81 * (Math.sin(th) + PH.crr * Math.cos(th)), P = PH.eta * w, k = 0.5 * PH.rho * PH.cda, lo = 0, hi = 30;
+  for (var i = 0; i < 40; i++) { var v = (lo + hi) / 2; if (v * F + k * v * v * v > P) hi = v; else lo = v; }
+  return (lo + hi) / 2;
+}
+function routePlan(back) {
+  var h = NIEBLA.h, iv = [], i;
+  for (i = 0; i < h.length - 1; i++) iv.push({ L: Math.min((i + 1) * 100, NIEBLA.tot) - i * 100, dh: h[i + 1] - h[i], h0: h[i] });
+  if (back) { var r = iv.slice().reverse().map(function (v) { return { L: v.L, dh: -v.dh, h0: v.h0 + v.dh }; }); iv = iv.concat(r); }
+  var out = [], a = 0, cur = null;
+  iv.forEach(function (v) {
+    var q = Math.round(v.dh / v.L * 100 * 2) / 2;
+    if (cur && cur.q === q) { cur.d += v.L; cur.dh += v.dh; }
+    else { cur = { q: q, a: a, d: v.L, dh: v.dh, h0: v.h0 }; out.push(cur); }
+    a += v.L;
+  });
+  return out.map(function (c) {
+    var rg = c.dh / c.d * 100, tg = Math.max(1, Math.min(18, Math.round(rg * 2) / 2)), z = tg < 3 ? 2 : tg < 6 ? 3 : 4;
+    var sg = seg(c.d, tg, [0, 300], [z, z], 'Km ' + km1(c.a)); sg.rg = rg; sg.a = c.a; sg.h0 = c.h0; sg.dh = c.dh; return sg;
+  });
+}
+function gProf(pw) { var o = []; pw.forEach(function (p, i) { var b = i + 1 < pw.length ? pw[i + 1][0] : p[0] + 1, l = o[o.length - 1]; if (l && l.g === p[3]) l.b = b; else o.push({ a: p[0], b: b, g: p[3] }); }); return o; }
 function bikePlan(id, w) {
   var s = [];
+  if (id === 'niebla' || id === 'niebla_ir') return routePlan(id === 'niebla_ir');
   if (id === 'base30') return [seg(300, 1, [85, 95], [1, 2], 'Calentamiento'), seg(1200, 2, [80, 90], [2, 2], 'Base zona 2'), seg(300, 1, [85, 95], [1, 1], 'Vuelta a la calma')];
   if (id === 'puente') {
     var n = w <= 3 ? 6 : w === 4 ? 8 : w === 5 ? 10 : w === 6 ? 5 : w === 7 ? 10 : 12;
@@ -916,15 +945,16 @@ function bikePlan(id, w) {
   s.push(seg(calma, 1, [85, 95], [1, 1], 'Vuelta a la calma'));
   return s;
 }
-var PLANS = [{ id: 'base30', n: 'Base' }, { id: 'base45', n: 'Base' }, { id: 'puente', n: 'Puente' }, { id: 'hills', n: 'Subidas' }];
-var BS = { segJ: 0, lastT: 0, plan: ST.bplan || 'base30', segs: [], run: false, acc: 0, rs: 0, seg: -1, sess: null, lastSample: 0 };
+var PLANS = [{ id: 'base30', n: 'Base' }, { id: 'base45', n: 'Base' }, { id: 'puente', n: 'Puente' }, { id: 'hills', n: 'Subidas' }, { id: 'niebla', n: 'Niebla ida' }, { id: 'niebla_ir', n: 'Niebla ida y vuelta' }];
+var BS = { route: false, dist: 0, lastKm: 0, segJ: 0, lastT: 0, plan: ST.bplan || 'base30', segs: [], run: false, acc: 0, rs: 0, seg: -1, sess: null, lastSample: 0 };
 function bTotal() { return sum(BS.segs.map(function (s) { return s.d; })); }
+function bPos() { return BS.route ? BS.dist * 1000 : bElapsed(); }
 function bElapsed() { return BS.acc + (BS.run ? Date.now() - BS.rs : 0); }
 function segAt(ms) { var t = ms / 1000, a = 0; for (var k = 0; k < BS.segs.length; k++) { a += BS.segs[k].d; if (t < a) return k; } return BS.segs.length - 1; }
 function segStart(k) { return sum(BS.segs.slice(0, k).map(function (s) { return s.d; })); }
 function setPlan(id) {
-  BS.plan = id; ST.bplan = id; save(); BS.segs = bikePlan(id, weekNum());
-  var h = ''; PLANS.forEach(function (p) { var m = Math.round(sum(bikePlan(p.id, weekNum()).map(function (s) { return s.d; })) / 60); h += '<button type="button" class="chip" data-plan="' + p.id + '" aria-pressed="' + (p.id === id) + '">' + p.n + ' ' + m + ' min</button>'; });
+  BS.plan = id; ST.bplan = id; save(); BS.route = id.indexOf('niebla') === 0; if (!BS.sess) { BS.dist = 0; BS.lastKm = 0; } BS.segs = bikePlan(id, weekNum());
+  var h = ''; PLANS.forEach(function (p) { var tt = sum(bikePlan(p.id, weekNum()).map(function (s) { return s.d; })), m = p.id.indexOf('niebla') === 0 ? km1(tt) + ' km' : Math.round(tt / 60) + ' min'; h += '<button type="button" class="chip" data-plan="' + p.id + '" aria-pressed="' + (p.id === id) + '">' + p.n + ' ' + m + '</button>'; });
   $('bPlans').innerHTML = h;
   Array.prototype.forEach.call($('bPlans').querySelectorAll('[data-plan]'), function (b) { b.addEventListener('click', function () { if (BS.sess) { toast('Termina la sesión actual para cambiar de plan.'); return; } setPlan(b.getAttribute('data-plan')); }); });
   drawTL();
@@ -936,12 +966,27 @@ function drawTL() {
   $('bTL').innerHTML = tl + '<span class="pos" id="bPos"></span>';
 }
 function renderB() {
-  var e = bElapsed(), k = segAt(e), s = BS.segs[k], tot = bTotal(), now = Date.now();
+  var e = bElapsed(), pos = bPos(), k = segAt(pos), s = BS.segs[k], tot = bTotal(), now = Date.now();
   var wOk = now - BK.tw < 3000, cOk = now - BK.tc < 3000;
   $('bW').textContent = wOk ? BK.w : '--';
   var cv = $('bC'); cv.textContent = cOk ? BK.c : '--'; cv.className = 'v' + (cOk && BS.sess ? (BK.c >= s.cad[0] && BK.c <= s.cad[1] ? ' in' : ' out') : '');
   $('bG').textContent = BK.grade + '%';
-  if (!BS.sess) {
+  if (BS.route) {
+    var sgn = function (x) { return (x > 0 ? '+' : '') + x.toFixed(1).replace('.', ',') + '%'; };
+    if (!BS.sess) {
+      var up = 0, dn = 0; BS.segs.forEach(function (q) { if (q.dh > 0) up += q.dh; else dn -= q.dh; });
+      $('bSegN').textContent = 'Listo · ' + km1(tot) + ' km';
+      $('bSegT').textContent = BS.segs.length + ' tramos · la pendiente cambia sola · desnivel +' + Math.round(up) + ' / −' + Math.round(dn) + ' m';
+      $('bSegR').textContent = km1(tot) + ' km';
+      $('bSegX').textContent = 'Sale con ' + sgn(BS.segs[0].rg) + ' · la distancia se calcula con tu potencia y ' + (ST.settings.mass || 92) + ' kg (Ajustes)';
+    } else {
+      var hh = s.h0 + s.dh * Math.min(1, Math.max(0, (pos / 1000 - s.a) / s.d)), vk = Math.round(vVirt(wOk ? BK.w : null, s.rg) * 3.6), nx2 = BS.segs[k + 1];
+      $('bSegN').textContent = 'Km ' + km1(pos / 1000) + ' de ' + km1(tot);
+      $('bSegT').textContent = 'ruta ' + sgn(s.rg) + ' · rodillo ' + String(s.g).replace('.', ',') + '% · ' + vk + ' km/h · altura ' + Math.round(hh) + ' m';
+      $('bSegR').textContent = km1(Math.max(0, tot - pos / 1000)) + ' km';
+      $('bSegX').textContent = (nx2 ? 'Sigue: ' + sgn(nx2.rg) + ' por ' + Math.round(nx2.d) + ' m' : 'Último tramo') + ' · tiempo ' + fmtS(e / 1000) + (e > 0 ? ' · prom ' + (pos / e * 3.6).toFixed(1).replace('.', ',') + ' km/h' : '');
+    }
+  } else if (!BS.sess) {
     $('bSegN').textContent = 'Listo · ' + Math.round(tot / 60) + ' min';
     $('bSegT').textContent = BS.segs.length + ' tramos · la pendiente cambia sola';
     $('bSegR').textContent = fmtS(tot);
@@ -955,13 +1000,15 @@ function renderB() {
     var nx = BS.segs[k + 1];
     $('bSegX').textContent = (nx ? 'Sigue: ' + nx.n + ' · ' + nx.g + '% · ' + fmtS(nx.d) : 'Último tramo') + ' · total ' + fmtS(e / 1000) + ' de ' + fmtS(tot);
   }
-  var pos = $('bPos'); if (pos) pos.style.left = 'calc(' + Math.min(100, e / 1000 / tot * 100) + '% - 1px)';
+  var pEl = $('bPos'); if (pEl) pEl.style.left = 'calc(' + Math.min(100, pos / 1000 / tot * 100) + '% - 1px)';
   $('bMain').textContent = BS.run ? 'Pausa' : (BS.sess ? 'Seguir' : 'Play'); $('bMain').className = 'big' + (BS.run ? ' stop' : '');
   $('bPlans').style.opacity = BS.sess ? 0.5 : 1;
 }
 function bTick() {
   if (!BS.sess) return;
-  var e = bElapsed(), k = segAt(e), nw = Date.now(), dt = nw - BS.lastT; BS.lastT = nw;
+  var e = bElapsed(), nw = Date.now(), dt = nw - BS.lastT; BS.lastT = nw;
+  if (BS.route && BS.run && BS.seg >= 0 && dt < 2000) BS.dist += vVirt(nw - BK.tw < 3000 ? BK.w : null, BS.segs[BS.seg].rg) * dt / 1000;
+  var k = segAt(bPos());
   if (BS.run && BS.seg === k && dt < 2000 && nw - BK.tw < 3000 && BK.w != null) BS.segJ += BK.w * dt;
   var cs = BS.segs[k];
   if (BS.run && BS.seg === k && cs.kj && BS.segJ >= cs.kj * 1e6) {
@@ -969,25 +1016,28 @@ function bTick() {
     if (inSeg >= 25 && k < BS.segs.length - 1) { cs.d = Math.round(inSeg * 10) / 10; drawTL(); k = segAt(e); }
   }
   if (k !== BS.seg) {
-    BS.seg = k; BS.segJ = 0; var s = BS.segs[k]; setGrade(s.g); beep(2);
-    speak('Tramo ' + (k + 1) + '. ' + s.n + '. Pendiente ' + s.g + ' por ciento. Cadencia ' + s.cad[0] + ' a ' + s.cad[1] + '.');
+    var prev = BS.seg >= 0 ? BS.segs[BS.seg] : null; BS.seg = k; BS.segJ = 0; var s = BS.segs[k]; setGrade(s.g);
+    if (BS.route) { if (s.rg >= 5 && (!prev || prev.rg < 5)) { beep(2); speak('Sube. Pendiente ' + Math.round(s.rg) + ' por ciento.'); } }
+    else { beep(2); speak('Tramo ' + (k + 1) + '. ' + s.n + '. Pendiente ' + s.g + ' por ciento. Cadencia ' + s.cad[0] + ' a ' + s.cad[1] + '.'); }
   }
   if (BS.run && Date.now() - BS.lastSample >= 1000) {
     BS.lastSample = Date.now(); var n = Date.now();
     BS.sess.pw.push([Math.round(e / 1000), n - BK.tw < 3000 ? BK.w : null, n - BK.tc < 3000 ? BK.c : null, BK.grade]);
   }
-  if (e >= bTotal() * 1000) bFinish(false);
+  if (BS.route && BS.run && Math.floor(BS.dist / 1000) > BS.lastKm) { BS.lastKm = Math.floor(BS.dist / 1000); speak('Kilómetro ' + BS.lastKm + '.'); }
+  if (bPos() >= bTotal() * 1000) bFinish(false);
 }
 $('bMain').addEventListener('click', function () {
   initAudio();
-  if (!BS.sess) { BS.segs = bikePlan(BS.plan, weekNum()); BS.sess = { type: 'bici', plan: BS.plan, week: weekNum(), start: Date.now(), hr: [], pw: [] }; BS.acc = 0; BS.seg = -1; wakeOn(); }
+  if (!BS.sess) { BS.segs = bikePlan(BS.plan, weekNum()); BS.sess = { type: 'bici', plan: BS.plan, week: weekNum(), start: Date.now(), hr: [], pw: [] }; BS.acc = 0; BS.seg = -1; BS.dist = 0; BS.lastKm = 0; wakeOn(); }
   if (BS.run) { BS.acc += Date.now() - BS.rs; BS.run = false; } else { BS.rs = Date.now(); BS.run = true; }
   bTick(); renderB();
 });
 $('bSkip').addEventListener('click', function () {
   if (!BS.sess) { toast('Parte la sesión con Play.'); return; }
-  var k = segAt(bElapsed()); if (k >= BS.segs.length - 1) { toast('Es el último tramo.'); return; }
-  BS.acc = segStart(k + 1) * 1000; if (BS.run) BS.rs = Date.now(); bTick(); renderB();
+  var k = segAt(bPos()); if (k >= BS.segs.length - 1) { toast('Es el último tramo.'); return; }
+  if (BS.route) BS.dist = segStart(k + 1) + 0.01; else { BS.acc = segStart(k + 1) * 1000; if (BS.run) BS.rs = Date.now(); }
+  bTick(); renderB();
 });
 $('bEnd').addEventListener('click', function () {
   if (!BS.sess) { toast('No hay sesión en curso.'); return; }
@@ -1003,18 +1053,25 @@ function bFinish(early) {
   var st = hrStats(s.hr); s.hrAvg = st.avg; s.hrMax = st.max; s.zones = st.zones;
   var ws = s.pw.filter(function (p) { return p[1] != null; }).map(function (p) { return p[1]; }), cs = s.pw.filter(function (p) { return p[2] != null && p[2] > 0; }).map(function (p) { return p[2]; });
   s.wAvg = ws.length ? Math.round(sum(ws) / ws.length) : null; s.wMax = ws.length ? Math.max.apply(null, ws) : null; s.cAvg = cs.length ? Math.round(sum(cs) / cs.length) : null; s.kj = ws.length ? Math.round(sum(ws) / 1000) : null;
-  s.hr = downs(s.hr, 5); s.pw = downs(s.pw, 5); s.segs = BS.segs.map(function (x, k) { return { a: segStart(k), b: segStart(k) + x.d, g: x.g }; });
+  if (BS.route) { s.dist = Math.round(BS.dist); s.segs = gProf(s.pw); } else s.segs = BS.segs.map(function (x, k) { return { a: segStart(k), b: segStart(k) + x.d, g: x.g }; });
+  s.hr = downs(s.hr, 5); s.pw = downs(s.pw, 5);
   ST.hist.push(s); while (ST.hist.length > 150) ST.hist.shift(); save();
-  BS.sess = null; BS.acc = 0; BS.seg = -1; wakeOff(); beep(3); speak('Sesión terminada.');
+  BS.sess = null; BS.acc = 0; BS.seg = -1; BS.dist = 0; BS.lastKm = 0; wakeOff(); beep(3); speak('Sesión terminada.');
   setGrade(0); renderB(); renderP(); renderWeek(); showSummary(s);
 }
 function drawB() {
+  if (BS.route) {
+    var tt = bTotal();
+    if (BS.sess) drawChart($('bChart'), { x0: 0, x1: Math.max(300, bElapsed() / 1000), hmin: 60, hmax: Math.max(ST.settings.hrmax, 120), hr: BS.sess.hr, pw: BS.sess.pw, profile: gProf(BS.sess.pw), pos: bElapsed() / 1000, lx0: '0', lx1: Math.round(bElapsed() / 60000) + ' min' });
+    else drawChart($('bChart'), { x0: 0, x1: tt, hmin: 60, hmax: Math.max(ST.settings.hrmax, 120), hr: [], pw: [], profile: BS.segs.map(function (x) { return { a: x.a, b: x.a + x.d, g: x.g }; }), pos: null, lx0: '0', lx1: km1(tt) + ' km' });
+    return;
+  }
   var tot = bTotal(), prof = BS.segs.map(function (x, k) { return { a: segStart(k), b: segStart(k) + x.d, g: x.g }; });
   drawChart($('bChart'), { x0: 0, x1: tot, hmin: 60, hmax: Math.max(ST.settings.hrmax, 120), hr: BS.sess ? BS.sess.hr : [], pw: BS.sess ? BS.sess.pw : [], profile: prof, pos: BS.sess ? bElapsed() / 1000 : null, lx0: '0', lx1: Math.round(tot / 60) + ' min' });
 }
 
 /* ---------- resumen ---------- */
-function planName(id) { return id === 'base30' ? 'Base 30 min' : id === 'base45' ? 'Base 45 min' : id === 'puente' ? 'Desafío Puente Cruces' : 'Subidas'; }
+function planName(id) { return id === 'base30' ? 'Base 30 min' : id === 'base45' ? 'Base 45 min' : id === 'puente' ? 'Desafío Puente Cruces' : id === 'niebla' ? 'Niebla ida' : id === 'niebla_ir' ? 'Niebla ida y vuelta' : 'Subidas'; }
 function zoneBar(z) { var t = sum(z.slice(1)) || 1, h = '<div class="zbar">'; for (var k = 1; k <= 5; k++) if (z[k]) h += '<i style="width:' + (z[k] / t * 100) + '%;background:var(--z' + k + ')" title="Z' + k + '"></i>'; h += '</div><p class="muted" style="font-size:.8rem">'; for (k = 1; k <= 5; k++) h += 'Z' + k + ' ' + fmtS(z[k] || 0) + (k < 5 ? ' · ' : ''); return h + '</p>'; }
 function setsByEx(s) {
   var g = []; s.sets.forEach(function (x) { var last = g[g.length - 1]; if (!last || last.v !== x.v) { last = { v: x.v, list: [] }; g.push(last); } last.list.push(x); }); return g;
@@ -1029,6 +1086,7 @@ function summaryText(s) {
   } else {
     L.push('Bici ' + planName(s.plan) + ' · semana ' + s.week + ' · ' + fdate(s.start) + (s.early ? ' (terminada antes)' : ''));
     L.push('Duración ' + fmtS(s.dur) + ' · potencia media ' + (s.wAvg != null ? s.wAvg + ' W' : '-') + ' · máx ' + (s.wMax != null ? s.wMax + ' W' : '-') + ' · cadencia media ' + (s.cAvg || '-') + ' · energía ' + (s.kj != null ? s.kj + ' kJ' : '-'));
+    if (s.dist) L.push('Distancia ' + (s.dist / 1000).toFixed(2) + ' km · velocidad media ' + (s.dist / s.dur * 3.6).toFixed(1) + ' km/h (calculada con potencia)');
     L.push('FC prom ' + (s.hrAvg || '-') + ' · FC máx ' + (s.hrMax || '-'));
   }
   if (s.zones) L.push('Tiempo por zona: ' + [1, 2, 3, 4, 5].map(function (k) { return 'Z' + k + ' ' + fmtS(s.zones[k] || 0); }).join(' · '));
@@ -1047,6 +1105,7 @@ function showSummary(s) {
   } else {
     h += '<div><b>' + fmtS(s.dur) + '</b><span>Duración</span></div><div><b>' + (s.wAvg != null ? s.wAvg : '--') + ' W</b><span>Potencia media</span></div><div><b>' + (s.wMax != null ? s.wMax : '--') + ' W</b><span>Potencia máx</span></div>';
     h += '<div><b>' + (s.cAvg || '--') + '</b><span>Cadencia media</span></div><div><b>' + (s.kj != null ? s.kj : '--') + ' kJ</b><span>Energía (≈ kcal)</span></div><div><b>' + (s.hrAvg || '--') + ' / ' + (s.hrMax || '--') + '</b><span>FC prom / máx</span></div>';
+    if (s.dist) h += '<div><b>' + (s.dist / 1000).toFixed(1).replace('.', ',') + ' km</b><span>Distancia</span></div><div><b>' + (s.dist / s.dur * 3.6).toFixed(1).replace('.', ',') + '</b><span>km/h medios</span></div>';
   }
   h += '</div>';
   if (s.zones && sum(s.zones)) h += zoneBar(s.zones);
@@ -1098,7 +1157,7 @@ function renderP() {
   $('hist').innerHTML = hh || '<p class="muted" style="margin:0">Todavía no hay sesiones guardadas.</p>';
   Array.prototype.forEach.call($('hist').querySelectorAll('[data-h]'), function (x) { x.addEventListener('click', function () { showSummary(ST.hist[+x.getAttribute('data-h')]); }); });
   renderPw(); renderCu();
-  var S = ST.settings; $('sStart').value = S.start; $('sMax').value = S.hrmax; $('sRec').value = S.rec; $('sAl').value = S.alert; $('sDb').value = S.dbMax; $('sBar').value = S.barMax; $('sVoice').value = S.voice ? '1' : '0';
+  var S = ST.settings; $('sStart').value = S.start; $('sMax').value = S.hrmax; $('sRec').value = S.rec; $('sAl').value = S.alert; $('sDb').value = S.dbMax; $('sBar').value = S.barMax; $('sMass').value = S.mass || 92; $('sVoice').value = S.voice ? '1' : '0';
 }
 function renderPw() {
   var seen = {}, h = '';
@@ -1169,7 +1228,7 @@ function bindSet(id, key, lo, hi, isNum) {
     ST.settings[key] = v; save(); renderP(); renderF(); renderHR(); if (!BS.sess) setPlan(BS.plan);
   });
 }
-bindSet('sStart', 'start'); bindSet('sMax', 'hrmax', 120, 220, 1); bindSet('sRec', 'rec', 70, 150, 1); bindSet('sAl', 'alert', 100, 210, 1); bindSet('sDb', 'dbMax', 1, 100, 1); bindSet('sBar', 'barMax', 1, 200, 1);
+bindSet('sStart', 'start'); bindSet('sMax', 'hrmax', 120, 220, 1); bindSet('sRec', 'rec', 70, 150, 1); bindSet('sAl', 'alert', 100, 210, 1); bindSet('sDb', 'dbMax', 1, 100, 1); bindSet('sBar', 'barMax', 1, 200, 1); bindSet('sMass', 'mass', 40, 200, 1);
 $('sVoice').addEventListener('change', function () { ST.settings.voice = this.value === '1'; save(); });
 $('dlCsv').addEventListener('click', function () {
   var L = ['fecha;tipo;rutina_o_plan;semana;ejercicio;serie;kg;valor;unidad;tiempo_s;fc_max;fc_prom;potencia_media;cadencia_media;kj'];
@@ -1361,7 +1420,7 @@ var lastDay = dkey(new Date());
 setInterval(function () { var k = dkey(new Date()); if (k !== lastDay) { lastDay = k; renderWeek(); if (!FZ.sess) renderF(); } }, 60000);
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
-window.__app = { ST: ST, FZ: FZ, BS: BS, BK: BK, HR: HR, onHr: onHr, renderF: renderF, renderWeek: renderWeek, nextRoutine: nextRoutine, bikePlan: bikePlan, bTick: bTick, setPlan: setPlan, planFor: planFor, itemsFor: itemsFor, bTotal: bTotal };
+window.__app = { ST: ST, FZ: FZ, BS: BS, BK: BK, HR: HR, onHr: onHr, renderF: renderF, renderWeek: renderWeek, nextRoutine: nextRoutine, bikePlan: bikePlan, bTick: bTick, setPlan: setPlan, planFor: planFor, itemsFor: itemsFor, bTotal: bTotal, vVirt: vVirt, routePlan: routePlan, bFinish: bFinish };
 })();
 </script>
 </body></html>
