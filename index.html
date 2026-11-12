@@ -223,6 +223,15 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
       <button type="button" id="fEnd">Terminar</button>
       <button type="button" id="fNext" aria-label="Ejercicio siguiente">▶</button>
     </div>
+    <div class="card" id="hgCard">
+      <h3>Colgado · pieza de la barra</h3>
+      <p class="muted" style="margin:0 0 6px;font-size:.85rem">Va aparte de la rutina. Cuélgate con los hombros activos y suelta cuando no aguantes más.</p>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <b id="hgT" style="font-size:1.6rem;font-variant-numeric:tabular-nums">0.0 s</b>
+        <button type="button" class="pri" id="hgB">Colgarme</button>
+      </div>
+      <div class="muted" id="hgL" style="font-size:.85rem;margin-top:6px"></div>
+    </div>
   </section>
 
   <!-- BICI -->
@@ -311,7 +320,7 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
 'use strict';
 var $ = function (id) { return document.getElementById(id); };
 var KEY = 'plan8s-v1';
-var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 16.5, barMax: 16.5, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, seed1: false, custom: [] };
+var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 16.5, barMax: 16.5, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, seed1: false, custom: [], hang: [] };
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function load() {
   var d = clone(DEF);
@@ -385,6 +394,7 @@ function tsec(v, w) {
 var V = {
   bog_warm: { n: 'Bogadora · calentamiento', eq: 'none', t: 'cardio', fig: 'rower', d: 'Rema suave, en zona 1–2. Orden del tirón: piernas, tronco, brazos. Para volver: brazos, tronco, piernas.', e: 'Tirar con los brazos antes de estirar las piernas. Encorvar la espalda.', q: 'tecnica remo ergometro' },
   bike_warm: { n: 'Bici · calentamiento', eq: 'none', t: 'cardio', fig: 'bike', d: 'Pedalea sin pendiente, cadencia 85 a 95, en zona 1–2.', e: 'Partir fuerte. Hombros encogidos.', q: 'calentamiento bicicleta rodillo' },
+  bog_int15: { n: 'Bogadora · intervalos 15 min', eq: 'none', t: 'cardio', fig: 'rower', min: 15, d: 'Quince minutos: 2 min suaves; después 6 veces 1 minuto fuerte (24 a 28 paladas por minuto, pulso entre 140 y 157) y 1 minuto suave; 1 min suave para terminar. En cada palada: empuja con las piernas (60%), luego inclina el tronco y al final tira con los brazos. Para volver: brazos, tronco, piernas.', e: 'Tirar con los brazos antes de estirar las piernas. Encorvar la espalda. Partir tan fuerte que no aguantas los 6 intervalos.', q: 'tecnica remo ergometro intervalos' },
   bog_cool: { n: 'Bogadora · cierre en zona 2', eq: 'none', t: 'cardio', fig: 'rower', d: 'Ritmo parejo en zona 2. Es el trabajo de quemar grasa de la sesión: si el pulso sube de zona 2, baja la intensidad.', e: 'Ir demasiado fuerte y salirte de zona 2.', q: 'tecnica remo ergometro' },
   bike_cool: { n: 'Bici · cierre en zona 2', eq: 'none', t: 'cardio', fig: 'bike', d: 'Pedalea parejo en zona 2, cadencia 80 a 90.', e: 'Salirte de zona 2.', q: 'zona 2 bicicleta' },
 
@@ -462,6 +472,7 @@ var V = {
 var SL = {
   warm: { n: 'Calentamiento', lv: ['bog_warm'], alt: ['bike_warm'] },
   cool: { n: 'Cierre', lv: ['bog_cool'], alt: ['bike_cool'] },
+  coolA: { n: 'Cierre de bogadora', lv: ['bog_int15'], alt: ['bog_cool', 'bike_cool'] },
   squatA: { n: 'Sentadilla', lv: ['goblet_t', 'goblet_p'], alt: [] },
   bulgA: { n: 'Sentadilla búlgara', lv: ['bulg', 'bulg_p'], alt: ['split', 'rev_lunge'] },
   legs: { n: 'Piernas', lv: ['split', 'split_p', 'bulg', 'bulg_p'], alt: ['rev_lunge', 'goblet_t'] },
@@ -484,7 +495,7 @@ var SL = {
   coolB: { n: 'Cierre de espalda', lv: ['bog_back'], alt: ['bog_cool', 'bike_cool'] },
   mob: { n: 'Movilidad', lv: ['mob'], alt: [] }
 };
-var RT = { A: ['warm', 'squatA', 'bulgA', 'push', 'fly', 'pull', 'glute', 'chin', 'lat', 'curlA', 'triA', 'calf', 'cool', 'mob'], B: ['warm', 'hinge', 'ohp', 'chestB', 'chin', 'curl', 'tri', 'glute1', 'core', 'calf', 'coolB', 'mob'] };
+var RT = { A: ['warm', 'squatA', 'bulgA', 'push', 'fly', 'lat', 'curlA', 'triA', 'calf', 'pull', 'glute', 'coolA', 'mob'], B: ['warm', 'hinge', 'ohp', 'chestB', 'curl', 'tri', 'glute1', 'core', 'calf', 'coolB', 'mob'] };
 function cur(slot) { var c = ST.choice[slot]; return (c && V[c]) ? c : SL[slot].lv[0]; }
 function planFor(slot) {
   var v = cur(slot), x = V[v], ph = phase(weekNum());
@@ -1108,6 +1119,24 @@ $('pwList').addEventListener('change', function (e) {
   var n = parseFloat(String(e.target.value).replace(',', '.')); if (isNaN(n) || n < 0 || n > 300) { toast('Kilos fuera de rango: revisa el dato.'); renderPw(); return; }
   pwSet(v, n); renderPw(); renderF();
 });
+var HG = { on: false, t0: 0 };
+function renderHg() {
+  var l = ST.hang || [], best = 0, today = dkey(new Date()), tl = [];
+  l.forEach(function (r) { if (r.s > best) best = r.s; if (dkey(new Date(r.t)) === today) tl.push(r.s); });
+  $('hgL').textContent = (tl.length ? 'Hoy: ' + tl.join(' s · ') + ' s · ' : 'Hoy: sin intentos · ') + 'Mejor marca: ' + (best ? best + ' s' : '–');
+  $('hgB').textContent = HG.on ? 'Soltar' : 'Colgarme'; $('hgB').className = 'pri'; $('hgB').style.background = HG.on ? 'var(--stop)' : ''; $('hgB').style.color = HG.on ? 'var(--stop-fg)' : ''; $('hgB').style.minWidth = '120px'; $('hgB').style.minHeight = '48px';
+}
+function hgTick() { $('hgT').textContent = (HG.on ? (Date.now() - HG.t0) / 1000 : 0).toFixed(1) + ' s'; }
+$('hgB').addEventListener('click', function () {
+  initAudio();
+  if (!HG.on) { HG.on = true; HG.t0 = Date.now(); beep(2); wakeOn(); }
+  else {
+    HG.on = false; var sec = Math.round((Date.now() - HG.t0) / 100) / 10; beep(3); if (!FZ.sess) wakeOff();
+    if (sec < 1) { toast('Intento descartado: duró menos de 1 s.'); }
+    else { if (!ST.hang) ST.hang = []; ST.hang.push({ t: Date.now(), s: sec }); save(); toast('Colgado: ' + sec + ' s'); }
+  }
+  hgTick(); renderHg();
+});
 function drawBody(b) {
   var cv = $('bdChart'), f = fit(cv), c = f.c, Wd = f.w, Ht = f.h; c.clearRect(0, 0, Wd, Ht);
   var muted = cssv('--muted'); c.font = '11px ' + cssv('--body'); c.fillStyle = muted;
@@ -1310,7 +1339,7 @@ function selectTab(t) {
   if (TAB === 'f') { renderF(); drawStrip(); } if (TAB === 'b') { renderB(); drawB(); } if (TAB === 'p') renderP();
 }
 Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (b) { b.addEventListener('click', function () { selectTab(b.getAttribute('data-tab')); }); });
-setInterval(function () { renderFT(); bTick(); if (TAB === 'b') renderB(); }, 200);
+setInterval(function () { renderFT(); bTick(); if (HG.on) hgTick(); if (TAB === 'b') renderB(); }, 200);
 function tickClock() { var d = new Date(); $('clk').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 tickClock();
 setInterval(function () { tickClock(); renderHR(); if (TAB === 'f') drawStrip(); if (TAB === 'b') drawB(); }, 1000);
@@ -1321,7 +1350,7 @@ if (ST.settings.dbMax === 15 && ST.settings.barMax === 30) { ST.settings.dbMax =
 if (ST.settings.start === '2026-11-03') { ST.settings.start = '2026-11-02'; save(); }
 if (!ST.seed1) { if (!ST.marks['2026-11-03'] && !ST.hist.length) ST.marks['2026-11-03'] = { t: 'f', r: 'A' }; ST.seed1 = true; save(); }
 FZ.routine = nextRoutine();
-setPlan(BS.plan); renderWeek(); renderF(); renderHR(); drawStrip();
+renderHg(); setPlan(BS.plan); renderWeek(); renderF(); renderHR(); drawStrip();
 (function () {
   var t = new Date(), ty = planType(t);
   if (ty === 'b' || ty === 'bs') { setPlan(bikeFor(t)); selectTab('b'); toast('Hoy toca ' + dayPlanText(dkey(t)) + '.'); }
