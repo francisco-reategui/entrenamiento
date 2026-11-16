@@ -67,6 +67,7 @@ button:disabled { opacity: .4; cursor: default; }
 
 main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-top: 6px; }
 .panel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+#pF { overflow-y: auto; padding-bottom: 12px; } #pF > * { flex-shrink: 0; }
 #pP { overflow-y: auto; gap: 10px; padding-bottom: 12px; }
 
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
@@ -94,7 +95,7 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-to
 .ext { font-size: .84rem; color: var(--accent); font-weight: 600; }
 .kgi { width: 60px; text-align: center; font: inherit; font-weight: 700; font-size: 1.05rem; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); min-height: 36px; }
 .sug { border: 0; border-radius: 8px; background: var(--ok); color: var(--ok-fg); font-weight: 700; font-size: .85rem; padding: 6px 10px; text-align: left; }
-.tbox { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+.tbox { flex: none; min-height: 0; padding-block: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
 .lab { font-family: var(--display); font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-size: 1rem; text-align: center; }
 .clock { font-family: var(--display); font-weight: 700; font-size: clamp(3rem, 17vw, 5.6rem); line-height: 1; font-variant-numeric: tabular-nums; }
 .clock.rest { color: var(--accent); } .clock.rdy { color: var(--ok); }
