@@ -58,6 +58,7 @@ button:disabled { opacity: .4; cursor: default; }
 .dc .dn { font-size: .68rem; color: var(--muted); font-weight: 700; }
 .dc .dt { font-size: .72rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 2px; }
 .t-f { color: var(--accent); } .t-b, .t-bs { color: var(--z2); } .t-r { color: var(--muted); }
+.dc .dt.t-fb { color: var(--accent); white-space: normal; line-height: 1.05; font-size: .66rem; text-align: center; }
 .dc.today { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
 .dc.ok { background: var(--bg); } .dc.ok .dt { color: var(--ok); }
 .dc.miss .dt { color: var(--warn); }
@@ -1280,9 +1281,11 @@ $('cuAdd').addEventListener('click', function () {
 });
 
 /* ---------- CALENDARIO ---------- */
-var TEMPLATE = { 0: 'b', 1: 'f', 2: 'b', 3: 'f', 4: 'b', 5: 'f', 6: 'r' };
+var TEMPLATE = { 0: 'b', 1: 'r', 2: 'fb', 3: 'r', 4: 'f', 5: 'fb', 6: 'r' };
+var RMAP = { 2: 'B', 4: 'A', 5: 'B' };
 var DN = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'], DL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-var TYN = { f: 'Fuerza', b: 'Bici', bs: 'Bici corta', r: 'Descanso' };
+var TYN = { f: 'Fuerza', b: 'Bici', fb: 'Bici + fuerza', bs: 'Bici corta', r: 'Descanso' };
+function isBike(ty) { return ty === 'b' || ty === 'bs' || ty === 'fb'; }
 var WK = {};
 function dkey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
 function kdate(k) { return new Date(k + 'T12:00:00'); }
@@ -1290,7 +1293,8 @@ function planType(d) { return ST.ovr[dkey(d)] || TEMPLATE[d.getDay()]; }
 function bikeFor(d) {
   var t = planType(d), w = weekOf(d), wd = d.getDay();
   if (t === 'bs') return 'base30';
-  if (wd === 2) return w <= 2 ? 'base30' : 'puente';
+  if (wd === 0) return w === 6 ? 'base45' : 'niebla';
+  if (wd === 2 || wd === 5) return w <= 2 ? 'base30' : 'puente';
   return w === 6 ? 'base30' : 'base45';
 }
 function doneOn(k) {
@@ -1301,6 +1305,15 @@ function doneOn(k) {
   return r;
 }
 function nextRoutine() {
+  var t = new Date(); t.setHours(0, 0, 0, 0);
+  for (var i = 0; i < 8; i++) {
+    var d = new Date(t); d.setDate(t.getDate() + i);
+    var ty = planType(d);
+    if (ty === 'f' || ty === 'fb') { if (i === 0 && doneOn(dkey(d)).f) continue; return RMAP[d.getDay()] || altRoutine(); }
+  }
+  return altRoutine();
+}
+function altRoutine() {
   var ev = [];
   ST.hist.forEach(function (s) { if (s.type === 'fuerza' && s.sets.length) ev.push([s.start, s.routine]); });
   for (var k in ST.marks) { var m = ST.marks[k]; if (m.t === 'f') ev.push([kdate(k).getTime(), m.r || 'A']); }
@@ -1311,17 +1324,22 @@ function nextRoutine() {
 function renderWeek() {
   var t = new Date(); t.setHours(0, 0, 0, 0);
   var mon = new Date(t); mon.setDate(t.getDate() - ((t.getDay() + 6) % 7));
-  var cursor = nextRoutine(), h = ''; WK = {};
+  var cursor = altRoutine(), h = ''; WK = {};
   for (var i = 0; i < 7; i++) {
     var d = new Date(mon); d.setDate(mon.getDate() + i);
     var k = dkey(d), ty = planType(d), dn = doneOn(k), past = d < t, isT = d.getTime() === t.getTime(), lab, ok = false, cls = ty;
-    if (ty === 'f') { if (dn.f) { lab = 'F·' + dn.f; ok = true; } else if (past) lab = 'Fuerza'; else { lab = 'F·' + cursor; WK[k] = cursor; cursor = cursor === 'A' ? 'B' : 'A'; } }
+    if (ty === 'fb') {
+      var rr0 = RMAP[d.getDay()] || cursor; if (!dn.f && !past && !RMAP[d.getDay()]) cursor = cursor === 'A' ? 'B' : 'A';
+      WK[k] = rr0; ok = !!(dn.f && dn.b);
+      lab = (dn.b ? '✓' : '') + 'Bici<br>' + (dn.f ? '✓' : '') + 'F·' + (dn.f || rr0); cls = 'fb';
+    }
+    else if (ty === 'f') { if (dn.f) { lab = 'F·' + dn.f; ok = true; } else if (past) lab = 'Fuerza'; else { var rr1 = RMAP[d.getDay()] || cursor; lab = 'F·' + rr1; WK[k] = rr1; if (!RMAP[d.getDay()]) cursor = cursor === 'A' ? 'B' : 'A'; } }
     else if (ty === 'b' || ty === 'bs') { lab = ty === 'bs' ? 'Bici c.' : 'Bici'; ok = !!dn.b; }
     else { lab = 'Libre'; ok = dn.r; }
-    if (!ok && ty !== 'f' && dn.f) { lab = 'F·' + dn.f; ok = true; cls = 'f'; }
+    if (!ok && ty !== 'f' && ty !== 'fb' && dn.f) { lab = 'F·' + dn.f; ok = true; cls = 'f'; }
     if (!ok && ty === 'f' && dn.b) { lab = 'Bici'; ok = true; cls = 'b'; }
     var miss = past && !ok && ty !== 'r' && d >= new Date(ST.settings.start + 'T00:00:00');
-    h += '<button type="button" class="dc' + (isT ? ' today' : '') + (ok ? ' ok' : '') + (miss ? ' miss' : '') + '" data-k="' + k + '" aria-label="' + DL[d.getDay()] + ' ' + d.getDate() + ': ' + TYN[ty] + (ok ? ', hecho' : '') + '"><span class="dn">' + DN[d.getDay()] + ' ' + d.getDate() + '</span><span class="dt t-' + cls + '">' + (ok ? '✓ ' : '') + lab + '</span></button>';
+    h += '<button type="button" class="dc' + (isT ? ' today' : '') + (ok ? ' ok' : '') + (miss ? ' miss' : '') + '" data-k="' + k + '" aria-label="' + DL[d.getDay()] + ' ' + d.getDate() + ': ' + TYN[ty] + (ok ? ', hecho' : '') + '"><span class="dn">' + DN[d.getDay()] + ' ' + d.getDate() + '</span><span class="dt t-' + cls + '">' + (ok && ty !== 'fb' ? '✓ ' : '') + lab + '</span></button>';
   }
   $('week').innerHTML = h;
   Array.prototype.forEach.call($('week').querySelectorAll('[data-k]'), function (b) { b.addEventListener('click', function () { openDay(b.getAttribute('data-k')); }); });
@@ -1329,8 +1347,9 @@ function renderWeek() {
 }
 function dayPlanText(k) {
   var d = kdate(k), ty = planType(d);
+  if (ty === 'fb') { var bp0 = bikeFor(d); return 'Bici · ' + planName(bp0) + ' + Fuerza' + (WK[k] ? ' · Rutina ' + WK[k] : ''); }
   if (ty === 'f') return 'Fuerza' + (WK[k] ? ' · Rutina ' + WK[k] : '');
-  if (ty === 'b' || ty === 'bs') { var bp = bikeFor(d); return TYN[ty] + ' · ' + planName(bp) + (bp === 'hills' || bp === 'puente' ? ' ' + Math.round(sum(bikePlan(bp, weekOf(d)).map(function (x) { return x.d; })) / 60) + ' min' : ''); }
+  if (isBike(ty)) { var bp = bikeFor(d); return TYN[ty] + ' · ' + planName(bp) + (bp === 'hills' || bp === 'puente' ? ' ' + Math.round(sum(bikePlan(bp, weekOf(d)).map(function (x) { return x.d; })) / 60) + ' min' : ''); }
   return 'Descanso';
 }
 function openDay(k) {
@@ -1341,7 +1360,7 @@ function openDay(k) {
   h += '<p><b>Toca:</b> ' + esc(dayPlanText(k)) + (ST.ovr[k] ? ' <span class="muted">(cambiado a mano)</span>' : '') + '</p>';
   h += '<p><b>Hecho:</b> ' + (done.length ? esc(done.join(' · ')) : '<span class="muted">nada registrado</span>') + (m ? ' <span class="muted">(marcado a mano)</span>' : '') + '</p>';
   var ty = planType(d), ph = phase(weekOf(d));
-  var R = dn.f || (ty === 'f' ? (WK[k] || nextRoutine()) : null);
+  var R = dn.f || ((ty === 'f' || ty === 'fb') ? (WK[k] || nextRoutine()) : null);
   if (R) {
     h += '<h3 style="margin-top:6px">Rutina ' + R + '</h3><div class="tbl"><table><thead><tr><th>Ejercicio</th><th>Series</th><th>Último</th></tr></thead><tbody>';
     itemsFor(R).forEach(function (slot) {
@@ -1351,7 +1370,7 @@ function openDay(k) {
     });
     h += '</tbody></table></div>';
   }
-  if (dn.b || ty === 'b' || ty === 'bs') {
+  if (dn.b || isBike(ty)) {
     var bp = dn.b || bikeFor(d), segs = bikePlan(bp, weekOf(d)), tot = sum(segs.map(function (x) { return x.d; }));
     h += '<h3 style="margin-top:6px">Bici · ' + planName(bp) + (bp === 'hills' || bp === 'puente' ? ' · ' + Math.round(tot / 60) + ' min' : '') + '</h3><div class="tbl"><table><thead><tr><th>Tramo</th><th>Min</th><th>Pend.</th><th>Cadencia</th></tr></thead><tbody>';
     segs.forEach(function (x) { h += '<tr><td style="white-space:normal">' + esc(x.n) + '</td><td>' + Math.round(x.d / 60 * 10) / 10 + '</td><td>' + x.g + '%</td><td>' + x.cad[0] + '–' + x.cad[1] + '</td></tr>'; });
@@ -1363,7 +1382,7 @@ function openDay(k) {
   if (isT && ty !== 'r') h += '<div class="btns"><button type="button" class="pri" id="dGo">Ir a la sesión de hoy</button></div>';
   h += '<p class="muted">Marcar como hecho (si entrenaste sin la app):</p><div class="btns"><button type="button" data-m="f:A">Fuerza A</button><button type="button" data-m="f:B">Fuerza B</button><button type="button" data-m="b">Bici</button><button type="button" data-m="r">Descanso</button></div>';
   if (m) h += '<div class="btns"><button type="button" data-m="x">Quitar la marca</button></div>';
-  h += '<p class="muted">Cambiar lo que toca este día:</p><div class="btns"><button type="button" data-o="f">Fuerza</button><button type="button" data-o="b">Bici</button><button type="button" data-o="bs">Bici corta</button><button type="button" data-o="r">Descanso</button></div>';
+  h += '<p class="muted">Cambiar lo que toca este día:</p><div class="btns"><button type="button" data-o="f">Fuerza</button><button type="button" data-o="b">Bici</button><button type="button" data-o="fb">Bici + fuerza</button><button type="button" data-o="bs">Bici corta</button><button type="button" data-o="r">Descanso</button></div>';
   if (ST.ovr[k]) h += '<div class="btns"><button type="button" data-o="x">Volver al calendario normal</button></div>';
   h += '<div class="btns"><button type="button" data-close>Cerrar</button></div>';
   openOv(h);
@@ -1381,13 +1400,14 @@ function openDay(k) {
   Array.prototype.forEach.call($('ovc').querySelectorAll('[data-o]'), function (b) {
     b.addEventListener('click', function () {
       var v = b.getAttribute('data-o'); if (v === 'x') delete ST.ovr[k]; else ST.ovr[k] = v;
-      save(); closeOv(); renderWeek(); if (k === WK.today && !BS.sess && (planType(d) === 'b' || planType(d) === 'bs')) setPlan(bikeFor(d)); toast('Día cambiado a ' + (v === 'x' ? 'lo normal' : TYN[v]) + '.');
+      save(); closeOv(); renderWeek(); if (k === WK.today && !BS.sess && isBike(planType(d))) setPlan(bikeFor(d)); toast('Día cambiado a ' + (v === 'x' ? 'lo normal' : TYN[v]) + '.');
     });
   });
 }
 function goToday() {
   var t = new Date(), ty = planType(t);
-  if (ty === 'b' || ty === 'bs') { if (!BS.sess) setPlan(bikeFor(t)); selectTab('b'); }
+  if (ty === 'fb') { if (!BS.sess) setPlan(bikeFor(t)); selectTab(doneOn(dkey(t)).b ? 'f' : 'b'); }
+  else if (ty === 'b' || ty === 'bs') { if (!BS.sess) setPlan(bikeFor(t)); selectTab('b'); }
   else selectTab('f');
 }
 
@@ -1414,7 +1434,7 @@ FZ.routine = nextRoutine();
 renderHg(); setPlan(BS.plan); renderWeek(); renderF(); renderHR(); drawStrip();
 (function () {
   var t = new Date(), ty = planType(t);
-  if (ty === 'b' || ty === 'bs') { setPlan(bikeFor(t)); selectTab('b'); toast('Hoy toca ' + dayPlanText(dkey(t)) + '.'); }
+  if (isBike(ty)) { setPlan(bikeFor(t)); selectTab(ty === 'fb' && doneOn(dkey(t)).b ? 'f' : 'b'); toast('Hoy toca ' + dayPlanText(dkey(t)) + '.'); }
   else if (ty === 'r') toast('Hoy toca descanso.');
   else toast('Hoy toca Fuerza · Rutina ' + FZ.routine + '.');
 })();
