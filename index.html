@@ -498,7 +498,9 @@ var SL = {
   coolB: { n: 'Cierre de espalda', lv: ['bog_back'], alt: ['bog_cool', 'bike_cool'] },
   mob: { n: 'Movilidad', lv: ['mob'], alt: [] }
 };
-var RT = { A: ['warm', 'squatA', 'bulgA', 'push', 'fly', 'lat', 'curlA', 'triA', 'calf', 'pull', 'glute', 'coolA', 'mob'], B: ['warm', 'hinge', 'ohp', 'chestB', 'curl', 'tri', 'glute1', 'core', 'calf', 'coolB', 'mob'] };
+var RT = { A: ['warm', 'squatA', 'curlA', 'calf', 'hinge', 'glute', 'pull', 'core', 'cool', 'mob'], B: ['warm', 'ohp', 'push', 'chestB', 'lat', 'triA', 'curl', 'pull', 'core', 'coolB', 'mob'] };
+var RN = { A: 'Tirón + piernas', B: 'Empuje + espalda' };
+function rn(R) { return R + (RN[R] ? ' · ' + RN[R] : ''); }
 function cur(slot) { var c = ST.choice[slot]; return (c && V[c]) ? c : SL[slot].lv[0]; }
 function planFor(slot) {
   var v = cur(slot), x = V[v], ph = phase(weekNum());
@@ -743,7 +745,7 @@ function done(i) { return FZ.sess ? FZ.sess.sets.filter(function (s) { return s.
 function renderF() {
   var list = its(), i = FZ.idx, slot = list[i], p = planFor(slot), x = p.x, ph = phase(weekNum());
   $('fWeek').textContent = 'Semana ' + ph.w + (ph.w <= 8 ? ' de 8' : '') + ' · ' + ph.name;
-  $('fCount').textContent = 'Rutina ' + FZ.routine + ' · ' + (i + 1) + '/' + list.length;
+  $('fCount').textContent = 'Rutina ' + rn(FZ.routine) + ' · ' + (i + 1) + '/' + list.length;
   var dots = '';
   list.forEach(function (s, k) { var pk = planFor(s); dots += '<i class="' + (k === i ? 'cur' : (done(k) >= pk.sets ? 'done' : '')) + '"></i>'; });
   $('fDots').innerHTML = dots;
@@ -1281,8 +1283,8 @@ $('cuAdd').addEventListener('click', function () {
 });
 
 /* ---------- CALENDARIO ---------- */
-var TEMPLATE = { 0: 'b', 1: 'r', 2: 'fb', 3: 'r', 4: 'f', 5: 'fb', 6: 'r' };
-var RMAP = { 2: 'B', 4: 'A', 5: 'B' };
+var TEMPLATE = { 0: 'b', 1: 'r', 2: 'b', 3: 'f', 4: 'f', 5: 'r', 6: 'f' };
+var RMAP = { 3: 'B', 4: 'A', 6: 'B' };
 var DN = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'], DL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 var TYN = { f: 'Fuerza', b: 'Bici', fb: 'Bici + fuerza', bs: 'Bici corta', r: 'Descanso' };
 function isBike(ty) { return ty === 'b' || ty === 'bs' || ty === 'fb'; }
@@ -1348,7 +1350,7 @@ function renderWeek() {
 function dayPlanText(k) {
   var d = kdate(k), ty = planType(d);
   if (ty === 'fb') { var bp0 = bikeFor(d); return 'Bici · ' + planName(bp0) + ' + Fuerza' + (WK[k] ? ' · Rutina ' + WK[k] : ''); }
-  if (ty === 'f') return 'Fuerza' + (WK[k] ? ' · Rutina ' + WK[k] : '');
+  if (ty === 'f') return 'Fuerza' + (WK[k] ? ' · Rutina ' + rn(WK[k]) : '');
   if (isBike(ty)) { var bp = bikeFor(d); return TYN[ty] + ' · ' + planName(bp) + (bp === 'hills' || bp === 'puente' ? ' ' + Math.round(sum(bikePlan(bp, weekOf(d)).map(function (x) { return x.d; })) / 60) + ' min' : ''); }
   return 'Descanso';
 }
@@ -1362,7 +1364,7 @@ function openDay(k) {
   var ty = planType(d), ph = phase(weekOf(d));
   var R = dn.f || ((ty === 'f' || ty === 'fb') ? (WK[k] || nextRoutine()) : null);
   if (R) {
-    h += '<h3 style="margin-top:6px">Rutina ' + R + '</h3><div class="tbl"><table><thead><tr><th>Ejercicio</th><th>Series</th><th>Último</th></tr></thead><tbody>';
+    h += '<h3 style="margin-top:6px">Rutina ' + rn(R) + '</h3><div class="tbl"><table><thead><tr><th>Ejercicio</th><th>Series</th><th>Último</th></tr></thead><tbody>';
     itemsFor(R).forEach(function (slot) {
       var p = planFor(slot), x = p.x, ser = x.t === 'cardio' ? p.min + ' min' : x.t === 'time' ? p.sets + ' × ' + p.secs + ' s' : p.sets + ' × ' + p.rr[0] + '–' + p.rr[1] + (x.uni ? ' c/l' : '');
       var last = (x.eq === 'db' || x.eq === 'bar') && ST.kg[p.v] != null ? ST.kg[p.v] + ' kg' : '–';
@@ -1436,7 +1438,7 @@ renderHg(); setPlan(BS.plan); renderWeek(); renderF(); renderHR(); drawStrip();
   var t = new Date(), ty = planType(t);
   if (isBike(ty)) { setPlan(bikeFor(t)); selectTab(ty === 'fb' && doneOn(dkey(t)).b ? 'f' : 'b'); toast('Hoy toca ' + dayPlanText(dkey(t)) + '.'); }
   else if (ty === 'r') toast('Hoy toca descanso.');
-  else toast('Hoy toca Fuerza · Rutina ' + FZ.routine + '.');
+  else toast('Hoy toca Fuerza · Rutina ' + rn(FZ.routine) + '.');
 })();
 var lastDay = dkey(new Date());
 setInterval(function () { var k = dkey(new Date()); if (k !== lastDay) { lastDay = k; renderWeek(); if (!FZ.sess) renderF(); } }, 60000);
