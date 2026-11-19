@@ -480,7 +480,7 @@ var SL = {
   bulgA: { n: 'Sentadilla búlgara', lv: ['bulg', 'bulg_p'], alt: ['split', 'rev_lunge'] },
   legs: { n: 'Piernas', lv: ['split', 'split_p', 'bulg', 'bulg_p'], alt: ['rev_lunge', 'goblet_t'] },
   glute: { n: 'Glúteos', lv: ['bridge', 'bridge_p', 'bridge_1'], alt: ['rev_lunge'] },
-  hinge: { n: 'Bisagra de cadera', lv: ['rdl_bar', 'rdl_p', 'rdl_1'], alt: ['rdl_db'] },
+  hinge: { n: 'Bisagra de cadera', lv: ['rdl_1'], alt: ['rdl_bar', 'rdl_p', 'rdl_db'] },
   push: { n: 'Pecho', lv: ['fpress', 'fpress_p', 'pushup_e'], alt: ['pushup'] },
   ohp: { n: 'Hombros', lv: ['ohp', 'ohp_p', 'ohp_bar'], alt: ['ohp_1'] },
   pull: { n: 'Espalda', lv: ['brow', 'brow_p', 'row1'], alt: ['drow'] },
@@ -1432,6 +1432,7 @@ if (!ST.settings.dbv2) { if (ST.settings.dbMax === 8.25) ST.settings.dbMax = 16.
 if (ST.settings.dbMax === 15 && ST.settings.barMax === 30) { ST.settings.dbMax = 8.25; ST.settings.barMax = 16.5; save(); }
 if (ST.settings.start === '2026-11-03') { ST.settings.start = '2026-11-02'; save(); }
 if (!ST.seed1) { if (!ST.marks['2026-11-03'] && !ST.hist.length) ST.marks['2026-11-03'] = { t: 'f', r: 'A' }; ST.seed1 = true; save(); }
+if (!ST.settings.hingeUni) { delete ST.choice.hinge; if (ST.kg.rdl_1 == null) ST.kg.rdl_1 = 11; ST.settings.hingeUni = 1; save(); }
 FZ.routine = nextRoutine();
 renderHg(); setPlan(BS.plan); renderWeek(); renderF(); renderHR(); drawStrip();
 (function () {
