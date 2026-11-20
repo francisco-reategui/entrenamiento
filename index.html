@@ -323,7 +323,7 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
 'use strict';
 var $ = function (id) { return document.getElementById(id); };
 var KEY = 'plan8s-v1';
-var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 16.5, barMax: 16.5, mass: 92, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, seed1: false, custom: [], hang: [] };
+var DEF = { settings: { start: '2026-11-02', hrmax: 174, rec: 110, alert: 160, dbMax: 16.5, barMax: 16.5, mass: 92, voice: true }, choice: {}, kg: {}, hist: [], body: [], next: 'A', bplan: 'base30', marks: {}, ovr: {}, rov: {}, bov: {}, light: '', checkin: '', seed1: false, custom: [], hang: [] };
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function load() {
   var d = clone(DEF);
@@ -502,7 +502,12 @@ var RT = { A: ['warm', 'squatA', 'curlA', 'calf', 'hinge', 'glute', 'pull', 'cor
 var RN = { A: 'Tirón + piernas', B: 'Empuje + espalda' };
 function rn(R) { return R + (RN[R] ? ' · ' + RN[R] : ''); }
 function cur(slot) { var c = ST.choice[slot]; return (c && V[c]) ? c : SL[slot].lv[0]; }
-function planFor(slot) {
+function planFor(slot, nl) {
+  var p = planFor0(slot);
+  if (!nl && ST.light === dkey(new Date()) && p.x.t !== 'cardio' && p.sets > 1) p.sets = Math.ceil(p.sets / 2);
+  return p;
+}
+function planFor0(slot) {
   var v = cur(slot), x = V[v], ph = phase(weekNum());
   if (x.t === 'cardio') { var m = x.min || (slot === 'cool' ? (ph.w <= 2 || ph.w === 6 ? 5 : 8) : 5); return { v: v, x: x, sets: 1, min: m, rest: 45 }; }
   var sets = x.csets || (x.main ? ph.mainSets : ph.sets);
@@ -1283,8 +1288,9 @@ $('cuAdd').addEventListener('click', function () {
 });
 
 /* ---------- CALENDARIO ---------- */
-var TEMPLATE = { 0: 'b', 1: 'r', 2: 'b', 3: 'f', 4: 'f', 5: 'r', 6: 'f' };
-var RMAP = { 3: 'B', 4: 'A', 6: 'B' };
+var TEMPLATE = { 0: 'r', 1: 'r', 2: 'f', 3: 'b', 4: 'r', 5: 'f', 6: 'b' };
+var RMAP = { 2: 'B', 5: 'A' };
+function rmap(d) { return (ST.rov && ST.rov[dkey(d)]) || RMAP[d.getDay()]; }
 var DN = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'], DL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 var TYN = { f: 'Fuerza', b: 'Bici', fb: 'Bici + fuerza', bs: 'Bici corta', r: 'Descanso' };
 function isBike(ty) { return ty === 'b' || ty === 'bs' || ty === 'fb'; }
@@ -1293,10 +1299,12 @@ function dkey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + 
 function kdate(k) { return new Date(k + 'T12:00:00'); }
 function planType(d) { return ST.ovr[dkey(d)] || TEMPLATE[d.getDay()]; }
 function bikeFor(d) {
-  var t = planType(d), w = weekOf(d), wd = d.getDay();
+  var t = planType(d), w = weekOf(d), wd = d.getDay(), k = dkey(d);
+  if (ST.light === k) return 'base30';
+  if (ST.bov && ST.bov[k]) return ST.bov[k];
   if (t === 'bs') return 'base30';
-  if (wd === 0) return w === 6 ? 'base45' : 'niebla';
-  if (wd === 2 || wd === 5) return w <= 2 ? 'base30' : 'puente';
+  if (wd === 6) return w === 6 ? 'base45' : 'niebla';
+  if (wd === 3) return w <= 2 ? 'base30' : w === 6 ? 'base45' : 'puente';
   return w === 6 ? 'base30' : 'base45';
 }
 function doneOn(k) {
@@ -1311,7 +1319,7 @@ function nextRoutine() {
   for (var i = 0; i < 8; i++) {
     var d = new Date(t); d.setDate(t.getDate() + i);
     var ty = planType(d);
-    if (ty === 'f' || ty === 'fb') { if (i === 0 && doneOn(dkey(d)).f) continue; return RMAP[d.getDay()] || altRoutine(); }
+    if (ty === 'f' || ty === 'fb') { if (i === 0 && doneOn(dkey(d)).f) continue; return rmap(d) || altRoutine(); }
   }
   return altRoutine();
 }
@@ -1331,11 +1339,11 @@ function renderWeek() {
     var d = new Date(mon); d.setDate(mon.getDate() + i);
     var k = dkey(d), ty = planType(d), dn = doneOn(k), past = d < t, isT = d.getTime() === t.getTime(), lab, ok = false, cls = ty;
     if (ty === 'fb') {
-      var rr0 = RMAP[d.getDay()] || cursor; if (!dn.f && !past && !RMAP[d.getDay()]) cursor = cursor === 'A' ? 'B' : 'A';
+      var rr0 = rmap(d) || cursor; if (!dn.f && !past && !rmap(d)) cursor = cursor === 'A' ? 'B' : 'A';
       WK[k] = rr0; ok = !!(dn.f && dn.b);
       lab = (dn.b ? '✓' : '') + 'Bici<br>' + (dn.f ? '✓' : '') + 'F·' + (dn.f || rr0); cls = 'fb';
     }
-    else if (ty === 'f') { if (dn.f) { lab = 'F·' + dn.f; ok = true; } else if (past) lab = 'Fuerza'; else { var rr1 = RMAP[d.getDay()] || cursor; lab = 'F·' + rr1; WK[k] = rr1; if (!RMAP[d.getDay()]) cursor = cursor === 'A' ? 'B' : 'A'; } }
+    else if (ty === 'f') { if (dn.f) { lab = 'F·' + dn.f; ok = true; } else if (past) lab = 'Fuerza'; else { var rr1 = rmap(d) || cursor; lab = 'F·' + rr1; WK[k] = rr1; if (!rmap(d)) cursor = cursor === 'A' ? 'B' : 'A'; } }
     else if (ty === 'b' || ty === 'bs') { lab = ty === 'bs' ? 'Bici c.' : 'Bici'; ok = !!dn.b; }
     else { lab = 'Libre'; ok = dn.r; }
     if (!ok && ty !== 'f' && ty !== 'fb' && dn.f) { lab = 'F·' + dn.f; ok = true; cls = 'f'; }
@@ -1350,7 +1358,7 @@ function renderWeek() {
 function dayPlanText(k) {
   var d = kdate(k), ty = planType(d);
   if (ty === 'fb') { var bp0 = bikeFor(d); return 'Bici · ' + planName(bp0) + ' + Fuerza' + (WK[k] ? ' · Rutina ' + WK[k] : ''); }
-  if (ty === 'f') return 'Fuerza' + (WK[k] ? ' · Rutina ' + rn(WK[k]) : '');
+  if (ty === 'f') return 'Fuerza' + (WK[k] ? ' · Rutina ' + rn(WK[k]) : '') + (ST.light === k ? ' · a la mitad' : '');
   if (isBike(ty)) { var bp = bikeFor(d); return TYN[ty] + ' · ' + planName(bp) + (bp === 'hills' || bp === 'puente' ? ' ' + Math.round(sum(bikePlan(bp, weekOf(d)).map(function (x) { return x.d; })) / 60) + ' min' : ''); }
   return 'Descanso';
 }
@@ -1366,7 +1374,7 @@ function openDay(k) {
   if (R) {
     h += '<h3 style="margin-top:6px">Rutina ' + rn(R) + '</h3><div class="tbl"><table><thead><tr><th>Ejercicio</th><th>Series</th><th>Último</th></tr></thead><tbody>';
     itemsFor(R).forEach(function (slot) {
-      var p = planFor(slot), x = p.x, ser = x.t === 'cardio' ? p.min + ' min' : x.t === 'time' ? p.sets + ' × ' + p.secs + ' s' : p.sets + ' × ' + p.rr[0] + '–' + p.rr[1] + (x.uni ? ' c/l' : '');
+      var p = planFor(slot, k !== WK.today), x = p.x, ser = x.t === 'cardio' ? p.min + ' min' : x.t === 'time' ? p.sets + ' × ' + p.secs + ' s' : p.sets + ' × ' + p.rr[0] + '–' + p.rr[1] + (x.uni ? ' c/l' : '');
       var last = (x.eq === 'db' || x.eq === 'bar') && ST.kg[p.v] != null ? ST.kg[p.v] + ' kg' : '–';
       h += '<tr><td style="white-space:normal">' + esc(x.n) + '</td><td>' + ser + '</td><td>' + last + '</td></tr>';
     });
@@ -1401,7 +1409,7 @@ function openDay(k) {
   });
   Array.prototype.forEach.call($('ovc').querySelectorAll('[data-o]'), function (b) {
     b.addEventListener('click', function () {
-      var v = b.getAttribute('data-o'); if (v === 'x') delete ST.ovr[k]; else ST.ovr[k] = v;
+      var v = b.getAttribute('data-o'); delete ST.rov[k]; delete ST.bov[k]; if (v === 'x') delete ST.ovr[k]; else ST.ovr[k] = v;
       save(); closeOv(); renderWeek(); if (k === WK.today && !BS.sess && isBike(planType(d))) setPlan(bikeFor(d)); toast('Día cambiado a ' + (v === 'x' ? 'lo normal' : TYN[v]) + '.');
     });
   });
@@ -1411,6 +1419,41 @@ function goToday() {
   if (ty === 'fb') { if (!BS.sess) setPlan(bikeFor(t)); selectTab(doneOn(dkey(t)).b ? 'f' : 'b'); }
   else if (ty === 'b' || ty === 'bs') { if (!BS.sess) setPlan(bikeFor(t)); selectTab('b'); }
   else selectTab('f');
+}
+
+
+/* ---------- check-in diario ---------- */
+function afterAdj() {
+  renderWeek(); if (!FZ.sess) { FZ.routine = nextRoutine(); FZ.idx = 0; }
+  var t = new Date(); if (!BS.sess && isBike(planType(t))) setPlan(bikeFor(t));
+  renderF(); renderP();
+}
+function moveDay(k) {
+  var d = kdate(k), ty = planType(d), R = null, bp = null, nk = null, nd = null;
+  if (ty === 'f' || ty === 'fb') R = WK[k] || rmap(d) || nextRoutine();
+  if (isBike(ty)) bp = bikeFor(d);
+  for (var i = 1; i <= 6 && !nk; i++) {
+    var n = new Date(d); n.setDate(d.getDate() + i);
+    if (n.getDay() === 1) break;
+    if (planType(n) === 'r') { nk = dkey(n); nd = n; }
+  }
+  ST.ovr[k] = 'r'; delete ST.rov[k]; delete ST.bov[k];
+  if (nk) { ST.ovr[nk] = ty; if (R) ST.rov[nk] = R; if (bp) ST.bov[nk] = bp; }
+  ST.checkin = k; save(); closeOv(); afterAdj();
+  toast(nk ? 'Hoy descansas. La sesión pasa al ' + DL[nd.getDay()].toLowerCase() + '.' : 'Hoy descansas. No queda día libre esta semana, esa sesión se salta.');
+}
+function checkin() {
+  var t = new Date(), k = dkey(t), ty = planType(t), dn = doneOn(k);
+  if (ST.checkin === k || ty === 'r' || dn.f || dn.b || FZ.sess || BS.sess) return;
+  openOv('<h2>¿Cómo amaneciste?</h2><p class="muted">Hoy toca ' + esc(dayPlanText(k)) + '.</p><div class="btns"><button type="button" class="pri" data-ci="1">Bien</button><button type="button" data-ci="2">Cansado</button><button type="button" data-ci="3">Muy mal</button></div><p class="muted"><b>Cansado:</b> la sesión queda a la mitad (series a la mitad, bici de 30 min). <b>Muy mal:</b> hoy descansas y la sesión pasa al próximo día libre.</p><div class="btns"><button type="button" data-close>Después</button></div>');
+  Array.prototype.forEach.call($('ovc').querySelectorAll('[data-ci]'), function (b) {
+    b.addEventListener('click', function () {
+      var v = b.getAttribute('data-ci');
+      if (v === '3') { moveDay(k); return; }
+      ST.checkin = k; if (v === '2') ST.light = k;
+      save(); closeOv(); afterAdj(); toast(v === '2' ? 'Hoy va a la mitad.' : 'Perfecto, sesión completa.');
+    });
+  });
 }
 
 /* ---------- pestañas y ciclo ---------- */
@@ -1441,6 +1484,7 @@ renderHg(); setPlan(BS.plan); renderWeek(); renderF(); renderHR(); drawStrip();
   else if (ty === 'r') toast('Hoy toca descanso.');
   else toast('Hoy toca Fuerza · Rutina ' + rn(FZ.routine) + '.');
 })();
+checkin();
 var lastDay = dkey(new Date());
 setInterval(function () { var k = dkey(new Date()); if (k !== lastDay) { lastDay = k; renderWeek(); if (!FZ.sess) renderF(); } }, 60000);
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
