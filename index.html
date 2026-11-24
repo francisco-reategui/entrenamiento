@@ -229,14 +229,12 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
       <button type="button" id="fEnd">Terminar</button>
       <button type="button" id="fNext" aria-label="Ejercicio siguiente">▶</button>
     </div>
-    <div class="card" id="hgCard">
-      <h3>Colgado · pieza de la barra</h3>
-      <p class="muted" style="margin:0 0 6px;font-size:.85rem">Va aparte de la rutina. Cuélgate con los hombros activos y suelta cuando no aguantes más.</p>
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <b id="hgT" style="font-size:1.6rem;font-variant-numeric:tabular-nums">0.0 s</b>
+    <div class="card" id="hgCard" style="padding:8px 12px">
+      <div class="row" style="align-items:center;gap:10px;flex-wrap:nowrap">
         <button type="button" class="pri" id="hgB">Colgarme</button>
+        <b id="hgT" style="font-size:1rem;font-variant-numeric:tabular-nums;white-space:nowrap">0.0 s</b>
+        <span class="muted" id="hgL" style="font-size:.78rem;margin-left:auto;text-align:right"></span>
       </div>
-      <div class="muted" id="hgL" style="font-size:.85rem;margin-top:6px"></div>
     </div>
   </section>
 
@@ -1244,8 +1242,8 @@ var HG = { on: false, t0: 0 };
 function renderHg() {
   var l = ST.hang || [], best = 0, today = dkey(new Date()), tl = [];
   l.forEach(function (r) { if (r.s > best) best = r.s; if (dkey(new Date(r.t)) === today) tl.push(r.s); });
-  $('hgL').textContent = (tl.length ? 'Hoy: ' + tl.join(' s · ') + ' s · ' : 'Hoy: sin intentos · ') + 'Mejor marca: ' + (best ? best + ' s' : '–');
-  $('hgB').textContent = HG.on ? 'Soltar' : 'Colgarme'; $('hgB').className = 'pri'; $('hgB').style.background = HG.on ? 'var(--stop)' : ''; $('hgB').style.color = HG.on ? 'var(--stop-fg)' : ''; $('hgB').style.minWidth = '120px'; $('hgB').style.minHeight = '48px';
+  $('hgL').textContent = (tl.length ? 'Hoy: ' + tl.join(' · ') + ' s · ' : '') + 'Mejor: ' + (best ? best + ' s' : '–');
+  $('hgB').textContent = HG.on ? 'Soltar' : 'Colgarme'; $('hgB').className = 'pri'; $('hgB').style.background = HG.on ? 'var(--stop)' : 'var(--accent)'; $('hgB').style.color = HG.on ? 'var(--stop-fg)' : 'var(--accent-fg)'; $('hgB').style.borderColor = 'transparent'; $('hgB').style.fontWeight = '700'; $('hgB').style.minWidth = '0'; $('hgB').style.minHeight = '36px'; $('hgB').style.padding = '4px 12px'; $('hgB').style.fontSize = '.9rem';
 }
 function hgTick() { $('hgT').textContent = (HG.on ? (Date.now() - HG.t0) / 1000 : 0).toFixed(1) + ' s'; }
 $('hgB').addEventListener('click', function () {
