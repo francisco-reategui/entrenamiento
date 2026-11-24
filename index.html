@@ -125,6 +125,10 @@ canvas { display: block; width: 100%; }
 .segt { font-size: .85rem; font-weight: 600; color: var(--accent); }
 .segr { grid-row: 1 / span 2; grid-column: 2; font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem, 12vw, 3.6rem); line-height: 1; font-variant-numeric: tabular-nums; }
 .segx { grid-column: 1 / span 2; font-size: .8rem; color: var(--muted); }
+.gauge { grid-column: 1 / span 2; justify-self: center; width: min(250px, 72%); margin: 2px 0; }
+.gauge svg { width: 100%; display: block; }
+.gauge .gt { fill: var(--line); } .gauge .tk { stroke: var(--muted); stroke-width: 1.4; } .gauge .gl { fill: var(--muted); font: 600 8px var(--display); text-anchor: middle; }
+.gauge .nd { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; transition: transform .35s ease-out; } .gauge .hb { fill: var(--accent); } .gauge .gv { fill: var(--fg); font: 700 15px var(--display); text-anchor: middle; font-variant-numeric: tabular-nums; }
 .tl { position: relative; display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--line); flex: none; }
 .tl i { display: block; height: 100%; border-right: 1px solid var(--panel); }
 .tl .pos { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--fg); left: 0; }
@@ -251,6 +255,7 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
       <div class="segn" id="bSegN"></div>
       <div class="segr" id="bSegR">00:00</div>
       <div class="segt" id="bSegT"></div>
+      <div class="gauge" id="bSpd" hidden></div>
       <div class="segx" id="bSegX"></div>
     </div>
     <div class="tl" id="bTL"></div>
@@ -914,9 +919,35 @@ function vVirt(w, g) {
   for (var i = 0; i < 40; i++) { var v = (lo + hi) / 2; if (v * F + k * v * v * v > P) hi = v; else lo = v; }
   return (lo + hi) / 2;
 }
+var FLAT_K = 0.35;
+var STN = { l: 'Plano', s: 'Subida suave', f: 'Subida fuerte', d: 'Bajada' };
+function stagesOf(sg) {
+  function cat(g) { return g < -2 ? 'd' : g < 2 ? 'l' : g < 5 ? 's' : 'f'; }
+  var st = [];
+  sg.forEach(function (x, i) { st.push({ c: cat(x.rg), d: x.d, dh: x.dh, from: i, to: i }); });
+  var ch = true;
+  while (ch) {
+    ch = false;
+    for (var m = st.length - 1; m > 0; m--) if (st[m].c === st[m - 1].c) { st[m - 1].d += st[m].d; st[m - 1].dh += st[m].dh; st[m - 1].to = st[m].to; st.splice(m, 1); ch = true; }
+    if (ch) continue;
+    for (var i = 0; i < st.length && st.length > 1; i++) {
+      if (st[i].d < 150) {
+        var j = i === 0 ? 1 : i === st.length - 1 ? i - 1 : (st[i + 1].d > st[i - 1].d ? i + 1 : i - 1), o = st[j];
+        o.d += st[i].d; o.dh += st[i].dh; o.from = Math.min(o.from, st[i].from); o.to = Math.max(o.to, st[i].to);
+        o.c = cat(o.dh / o.d * 100); st.splice(i, 1); ch = true; break;
+      }
+    }
+  }
+  var a = 0;
+  st.forEach(function (x, n) { x.a = a; a += x.d; x.rg = x.dh / x.d * 100; x.n = STN[x.c]; for (var q = x.from; q <= x.to; q++) sg[q].si = n; });
+  return st;
+}
 function routePlan(back) {
-  var h = NIEBLA.h, iv = [], i;
-  for (i = 0; i < h.length - 1; i++) iv.push({ L: Math.min((i + 1) * 100, NIEBLA.tot) - i * 100, dh: h[i + 1] - h[i], h0: h[i] });
+  var h = NIEBLA.h, iv = [], i, hc = h[0];
+  for (i = 0; i < h.length - 1; i++) {
+    var L = Math.min((i + 1) * 100, NIEBLA.tot) - i * 100, dh = h[i + 1] - h[i], f = Math.abs(dh / L * 100) < 2 ? FLAT_K : 1;
+    L *= f; dh *= f; iv.push({ L: L, dh: dh, h0: hc }); hc += dh;
+  }
   if (back) { var r = iv.slice().reverse().map(function (v) { return { L: v.L, dh: -v.dh, h0: v.h0 + v.dh }; }); iv = iv.concat(r); }
   var out = [], a = 0, cur = null;
   iv.forEach(function (v) {
@@ -925,10 +956,12 @@ function routePlan(back) {
     else { cur = { q: q, a: a, d: v.L, dh: v.dh, h0: v.h0 }; out.push(cur); }
     a += v.L;
   });
-  return out.map(function (c) {
+  var res = out.map(function (c) {
     var rg = c.dh / c.d * 100, tg = Math.max(1, Math.min(18, Math.round(rg * 2) / 2)), z = tg < 3 ? 2 : tg < 6 ? 3 : 4;
     var sg = seg(c.d, tg, [0, 300], [z, z], 'Km ' + km1(c.a)); sg.rg = rg; sg.a = c.a; sg.h0 = c.h0; sg.dh = c.dh; return sg;
   });
+  res.stages = stagesOf(res);
+  return res;
 }
 function gProf(pw) { var o = []; pw.forEach(function (p, i) { var b = i + 1 < pw.length ? pw[i + 1][0] : p[0] + 1, l = o[o.length - 1]; if (l && l.g === p[3]) l.b = b; else o.push({ a: p[0], b: b, g: p[3] }); }); return o; }
 function bikePlan(id, w) {
@@ -974,6 +1007,18 @@ function drawTL() {
   BS.segs.forEach(function (s) { tl += '<i style="width:' + (s.d / tot * 100) + '%;background:var(--z' + Math.max(1, Math.min(5, s.z[1])) + ');opacity:' + (0.35 + s.g / 30) + '"></i>'; });
   $('bTL').innerHTML = tl + '<span class="pos" id="bPos"></span>';
 }
+function gaugeInit() {
+  var el = $('bSpd'); if (el.firstChild) return;
+  function pt(r, v) { var t = Math.PI * (1 - v / 40); return [100 + r * Math.cos(t), 100 - r * Math.sin(t)]; }
+  var g = '<svg viewBox="0 0 200 116" role="img" aria-label="Velocímetro"><path class="gt" d="M12,100 A88,88 0 0 1 188,100 L176,100 A76,76 0 0 0 24,100 Z"/>';
+  for (var v = 0; v <= 40; v += 5) { var a = pt(v % 10 === 0 ? 66 : 70, v), b = pt(76, v); g += '<line class="tk" x1="' + a[0].toFixed(1) + '" y1="' + a[1].toFixed(1) + '" x2="' + b[0].toFixed(1) + '" y2="' + b[1].toFixed(1) + '"/>'; if (v % 10 === 0) { var l = pt(55, v); g += '<text class="gl" x="' + l[0].toFixed(1) + '" y="' + (l[1] + 3).toFixed(1) + '">' + v + '</text>'; } }
+  g += '<line class="nd" id="bSpdN" x1="100" y1="100" x2="34" y2="100" style="transform-origin:100px 100px"/><circle class="hb" cx="100" cy="100" r="5"/><text class="gv" id="bSpdV" x="100" y="114">0 km/h</text></svg>';
+  el.innerHTML = g;
+}
+function gaugeSet(v) {
+  var n = $('bSpdN'); if (!n) return; var c = Math.max(0, Math.min(40, v));
+  n.style.transform = 'rotate(' + (c / 40 * 180) + 'deg)'; $('bSpdV').textContent = Math.round(v) + ' km/h';
+}
 function renderB() {
   var e = bElapsed(), pos = bPos(), k = segAt(pos), s = BS.segs[k], tot = bTotal(), now = Date.now();
   var wOk = now - BK.tw < 3000, cOk = now - BK.tc < 3000;
@@ -981,26 +1026,32 @@ function renderB() {
   var cv = $('bC'); cv.textContent = cOk ? BK.c : '--'; cv.className = 'v' + (cOk && BS.sess ? (BK.c >= s.cad[0] && BK.c <= s.cad[1] ? ' in' : ' out') : '');
   $('bG').textContent = BK.grade + '%';
   if (BS.route) {
-    var sgn = function (x) { return (x > 0 ? '+' : '') + x.toFixed(1).replace('.', ',') + '%'; };
+    var sgn = function (x) { return (x > 0 ? '+' : '') + x.toFixed(1).replace('.', ',') + '%'; }, stg = BS.segs.stages;
+    $('bSpd').hidden = false; gaugeInit();
     if (!BS.sess) {
       var up = 0, dn = 0; BS.segs.forEach(function (q) { if (q.dh > 0) up += q.dh; else dn -= q.dh; });
       $('bSegN').textContent = 'Listo · ' + km1(tot) + ' km';
-      $('bSegT').textContent = BS.segs.length + ' tramos · la pendiente cambia sola · desnivel +' + Math.round(up) + ' / −' + Math.round(dn) + ' m';
-      $('bSegR').textContent = km1(tot) + ' km';
-      $('bSegX').textContent = 'Sale con ' + sgn(BS.segs[0].rg) + ' · la distancia se calcula con tu potencia y ' + (ST.settings.mass || 92) + ' kg (Ajustes)';
+      $('bSegT').textContent = stg.length + ' etapas · tramos planos acortados · desnivel +' + Math.round(up) + ' / −' + Math.round(dn) + ' m';
+      $('bSegR').textContent = Math.round(stg[0].d) + ' m';
+      $('bSegX').textContent = 'Primera etapa: ' + stg[0].n + ' · ' + sgn(stg[0].rg) + ' · la distancia se calcula con tu potencia y ' + (ST.settings.mass || 92) + ' kg (Ajustes)';
+      gaugeSet(0);
     } else {
-      var hh = s.h0 + s.dh * Math.min(1, Math.max(0, (pos / 1000 - s.a) / s.d)), vk = Math.round(vVirt(wOk ? BK.w : null, s.rg) * 3.6), nx2 = BS.segs[k + 1];
-      $('bSegN').textContent = 'Km ' + km1(pos / 1000) + ' de ' + km1(tot);
-      $('bSegT').textContent = 'ruta ' + sgn(s.rg) + ' · rodillo ' + String(s.g).replace('.', ',') + '% · ' + vk + ' km/h · altura ' + Math.round(hh) + ' m';
-      $('bSegR').textContent = km1(Math.max(0, tot - pos / 1000)) + ' km';
-      $('bSegX').textContent = (nx2 ? 'Sigue: ' + sgn(nx2.rg) + ' por ' + Math.round(nx2.d) + ' m' : 'Último tramo') + ' · tiempo ' + fmtS(e / 1000) + (e > 0 ? ' · prom ' + (pos / e * 3.6).toFixed(1).replace('.', ',') + ' km/h' : '');
+      var cs0 = stg[s.si], left = Math.max(0, cs0.a + cs0.d - pos / 1000), nxS = stg[s.si + 1];
+      var hh = s.h0 + s.dh * Math.min(1, Math.max(0, (pos / 1000 - s.a) / s.d)), vk = vVirt(wOk ? BK.w : null, s.rg) * 3.6;
+      $('bSegN').textContent = 'Etapa ' + (s.si + 1) + '/' + stg.length + ' · ' + cs0.n;
+      $('bSegT').textContent = 'ahora ' + sgn(s.rg) + ' · rodillo ' + String(s.g).replace('.', ',') + '% · altura ' + Math.round(hh) + ' m';
+      $('bSegR').textContent = Math.round(left) + ' m';
+      $('bSegX').textContent = (nxS ? 'Sigue: ' + nxS.n + ' · ' + Math.round(nxS.d) + ' m · ' + sgn(nxS.rg) : 'Última etapa') + ' · km ' + km1(pos / 1000) + ' de ' + km1(tot) + ' · ' + fmtS(e / 1000);
+      gaugeSet(vk);
     }
   } else if (!BS.sess) {
+    $('bSpd').hidden = true;
     $('bSegN').textContent = 'Listo · ' + Math.round(tot / 60) + ' min';
     $('bSegT').textContent = BS.segs.length + ' tramos · la pendiente cambia sola';
     $('bSegR').textContent = fmtS(tot);
     $('bSegX').textContent = 'Primero: ' + BS.segs[0].n + ' · ' + BS.segs[0].g + '% · cadencia ' + BS.segs[0].cad[0] + '–' + BS.segs[0].cad[1];
   } else {
+    $('bSpd').hidden = true;
     var zz = s.z[0] === s.z[1] ? 'zona ' + s.z[0] : 'zona ' + s.z[0] + '–' + s.z[1];
     var zrng = zr(s.z[0])[0] + '–' + zr(s.z[1])[1];
     $('bSegN').textContent = (k + 1) + '/' + BS.segs.length + ' · ' + s.n;
@@ -1010,6 +1061,7 @@ function renderB() {
     $('bSegX').textContent = (nx ? 'Sigue: ' + nx.n + ' · ' + nx.g + '% · ' + fmtS(nx.d) : 'Último tramo') + ' · total ' + fmtS(e / 1000) + ' de ' + fmtS(tot);
   }
   var pEl = $('bPos'); if (pEl) pEl.style.left = 'calc(' + Math.min(100, pos / 1000 / tot * 100) + '% - 1px)';
+  $('bSkip').textContent = BS.route ? 'Saltar etapa' : 'Saltar tramo';
   $('bMain').textContent = BS.run ? 'Pausa' : (BS.sess ? 'Seguir' : 'Play'); $('bMain').className = 'big' + (BS.run ? ' stop' : '');
   $('bPlans').style.opacity = BS.sess ? 0.5 : 1;
 }
@@ -1026,7 +1078,7 @@ function bTick() {
   }
   if (k !== BS.seg) {
     var prev = BS.seg >= 0 ? BS.segs[BS.seg] : null; BS.seg = k; BS.segJ = 0; var s = BS.segs[k]; setGrade(s.g);
-    if (BS.route) { if (s.rg >= 5 && (!prev || prev.rg < 5)) { beep(2); speak('Sube. Pendiente ' + Math.round(s.rg) + ' por ciento.'); } }
+    if (BS.route) { if (!prev || prev.si !== s.si) { var cs1 = BS.segs.stages[s.si]; beep(2); speak(cs1.n + '. ' + Math.round(cs1.d / 10) * 10 + ' metros. Pendiente ' + Math.round(Math.abs(cs1.rg)) + ' por ciento.'); } }
     else { beep(2); speak('Tramo ' + (k + 1) + '. ' + s.n + '. Pendiente ' + s.g + ' por ciento. Cadencia ' + s.cad[0] + ' a ' + s.cad[1] + '.'); }
   }
   if (BS.run && Date.now() - BS.lastSample >= 1000) {
@@ -1045,7 +1097,7 @@ $('bMain').addEventListener('click', function () {
 $('bSkip').addEventListener('click', function () {
   if (!BS.sess) { toast('Parte la sesión con Play.'); return; }
   var k = segAt(bPos()); if (k >= BS.segs.length - 1) { toast('Es el último tramo.'); return; }
-  if (BS.route) BS.dist = segStart(k + 1) + 0.01; else { BS.acc = segStart(k + 1) * 1000; if (BS.run) BS.rs = Date.now(); }
+  if (BS.route) { var cst = BS.segs.stages[BS.segs[k].si]; if (cst.to >= BS.segs.length - 1) { toast('Es la última etapa.'); return; } BS.dist = segStart(cst.to + 1) + 0.01; } else { BS.acc = segStart(k + 1) * 1000; if (BS.run) BS.rs = Date.now(); }
   bTick(); renderB();
 });
 $('bEnd').addEventListener('click', function () {
