@@ -104,6 +104,7 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-to
 .cond span { padding: 3px 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
 .cond .ok { border-color: var(--ok); color: var(--ok); } .cond .no { border-color: var(--warn); color: var(--warn); }
 .reps { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9rem; }
+.repc { justify-content: center; padding: 6px 12px; gap: 14px; } .repc .sb { min-width: 56px; min-height: 46px; font-size: 1.4rem; }
 .reps b { font-family: var(--display); font-size: 1.6rem; min-width: 2ch; text-align: center; font-variant-numeric: tabular-nums; }
 .big { width: 100%; min-height: 60px; border: 0; border-radius: 12px; font-family: var(--display); font-weight: 700; font-size: 1.8rem; letter-spacing: .08em; text-transform: uppercase; background: var(--accent); color: var(--accent-fg); }
 .big.stop { background: var(--stop); color: var(--stop-fg); } .big.go { background: var(--ok); color: var(--ok-fg); }
@@ -220,14 +221,14 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
         </div>
       </div>
     </div>
+    <div class="card reps repc" id="fReps" hidden>
+      <span>Reps que hiciste:</span>
+      <button type="button" class="sb" id="rM" aria-label="Una repetición menos">−</button><b id="rV">0</b><button type="button" class="sb" id="rP" aria-label="Una repetición más">+</button>
+    </div>
     <div class="card tbox">
       <div class="lab" id="fLab"></div>
       <div class="clock" id="fClk">00:00.0</div>
       <div class="cond" id="fCond" hidden></div>
-      <div class="reps" id="fReps" hidden>
-        <span>Reps que hiciste:</span>
-        <button type="button" class="sb" id="rM" aria-label="Una repetición menos">−</button><b id="rV">0</b><button type="button" class="sb" id="rP" aria-label="Una repetición más">+</button>
-      </div>
       <button type="button" class="big" id="fMain">Play</button>
     </div>
     <div class="card hrbig" id="fHrC">
@@ -872,8 +873,8 @@ function suggest(slot, p) {
   return null;
 }
 $('fMain').addEventListener('click', fMain);
-$('rM').addEventListener('click', function () { if (FZ.lastSet && FZ.lastSet.reps > 0) { FZ.lastSet.reps--; renderFT(); } });
-$('rP').addEventListener('click', function () { if (FZ.lastSet) { FZ.lastSet.reps++; renderFT(); } });
+$('rM').addEventListener('click', function () { FZ.kgT = Date.now(); if (FZ.lastSet && FZ.lastSet.reps > 0) { FZ.lastSet.reps--; renderFT(); } });
+$('rP').addEventListener('click', function () { FZ.kgT = Date.now(); if (FZ.lastSet) { FZ.lastSet.reps++; renderFT(); } });
 function kgStep(dir) {
   FZ.kgT = Date.now(); var p = planFor(its()[FZ.idx]), st = 0.5, v = parseFloat(String($('kgIn').value).replace(',', '.'));
   if (isNaN(v)) v = p.x.eq === 'bar' ? 12 : 8; v = Math.max(0, Math.round((v + dir * st) * 2) / 2);
