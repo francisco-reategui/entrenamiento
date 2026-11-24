@@ -109,8 +109,16 @@ main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-to
 .big.stop { background: var(--stop); color: var(--stop-fg); } .big.go { background: var(--ok); color: var(--ok-fg); }
 canvas { display: block; width: 100%; }
 .strip { height: 62px; flex: none; }
+.hrbig { flex: 1 0 auto; min-height: 150px; display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; }
+.hrbig .strip { flex: 1 1 0; height: auto; min-height: 70px; }
+.hrrow { display: flex; align-items: baseline; gap: 8px; }
+.hrbn { font-family: var(--display); font-weight: 700; font-size: clamp(3rem, 16vw, 4.6rem); line-height: .9; font-variant-numeric: tabular-nums; }
+.hrbu { font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.hrrow .zp { margin-left: auto; align-self: center; font-size: .9rem; padding: 5px 12px; }
+.hrrow .sb { margin-left: auto; align-self: center; }
 .nav { display: flex; gap: 6px; }
 .nav button { flex: 1; min-height: 42px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); font-weight: 600; }
+#fPrev, #fNext { flex: 0 0 56px; } .nav button { white-space: nowrap; }
 
 /* bici */
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
@@ -222,7 +230,10 @@ pre.txt { white-space: pre-wrap; font: 12px/1.45 ui-monospace, Menlo, Consolas, 
       </div>
       <button type="button" class="big" id="fMain">Play</button>
     </div>
-    <canvas class="strip card" id="fStrip" style="padding:0"></canvas>
+    <div class="card hrbig" id="fHrC">
+      <div class="hrrow"><span class="hrbn" id="fHr">--</span><span class="hrbu" id="fHrU">lpm</span><span class="zp" id="fHrZ">Sin banda</span><button type="button" class="sb" id="fHrB" hidden>Conectar banda</button></div>
+      <canvas class="strip" id="fStrip"></canvas>
+    </div>
     <div class="nav">
       <button type="button" id="fPrev" aria-label="Ejercicio anterior">◀</button>
       <button type="button" id="fAB">Rutina A</button>
@@ -587,6 +598,12 @@ function renderHR() {
   el.textContent = ok ? HR.bpm : '--';
   if (ok) { var n = zoneOf(HR.bpm); z.textContent = 'Z' + n + ' · ' + ZN[n]; z.style.background = 'var(--z' + n + ')'; z.style.color = 'var(--zfg)'; el.style.color = HR.bpm > ST.settings.alert ? 'var(--stop)' : 'var(--fg)'; }
   else { z.textContent = HR.dev ? 'Sin señal' : 'Sin banda'; z.style.background = 'var(--line)'; z.style.color = 'var(--fg)'; el.style.color = 'var(--muted)'; }
+  var bn = $('fHr'), bz = $('fHrZ'), bb = $('fHrB');
+  if (bn) {
+    bn.textContent = ok ? HR.bpm : '--'; bz.textContent = z.textContent; bz.style.background = z.style.background; bz.style.color = z.style.color;
+    bn.style.color = ok ? (HR.bpm > ST.settings.alert ? 'var(--stop)' : 'var(--z' + zoneOf(HR.bpm) + ')') : 'var(--muted)';
+    bb.hidden = !!HR.dev; bz.hidden = !HR.dev;
+  }
 }
 function setDot(id, st) { $(id).className = 'dot ' + (st || ''); }
 function hrAttach() {
@@ -768,7 +785,7 @@ function renderF() {
   if (kg) { if (document.activeElement !== $('kgIn')) $('kgIn').value = ST.kg[p.v] != null ? ST.kg[p.v] : ''; $('kgU').textContent = x.eq === 'db' ? 'kg en la mancuerna' : 'kg en la barra'; }
   var sg = suggest(slot, p); FZ.sug = sg; $('fSug').hidden = !sg; if (sg) $('fSug').textContent = sg.text;
   $('fSwap').disabled = (SL[slot].lv.length + SL[slot].alt.length) < 2;
-  $('fAB').textContent = 'Rutina ' + FZ.routine; $('fAB').disabled = !!FZ.sess;
+  $('fAB').textContent = 'Cambiar a ' + (FZ.routine === 'A' ? 'B' : 'A'); $('fAB').disabled = !!FZ.sess;
   $('fPrev').disabled = i === 0; $('fNext').disabled = i === list.length - 1;
   renderFT();
 }
@@ -1243,7 +1260,7 @@ function renderHg() {
   var l = ST.hang || [], best = 0, today = dkey(new Date()), tl = [];
   l.forEach(function (r) { if (r.s > best) best = r.s; if (dkey(new Date(r.t)) === today) tl.push(r.s); });
   $('hgL').textContent = (tl.length ? 'Hoy: ' + tl.join(' · ') + ' s · ' : '') + 'Mejor: ' + (best ? best + ' s' : '–');
-  $('hgB').textContent = HG.on ? 'Soltar' : 'Colgarme'; $('hgB').className = 'pri'; $('hgB').style.background = HG.on ? 'var(--stop)' : 'var(--accent)'; $('hgB').style.color = HG.on ? 'var(--stop-fg)' : 'var(--accent-fg)'; $('hgB').style.borderColor = 'transparent'; $('hgB').style.fontWeight = '700'; $('hgB').style.minWidth = '0'; $('hgB').style.minHeight = '36px'; $('hgB').style.padding = '4px 12px'; $('hgB').style.fontSize = '.9rem';
+  $('hgB').textContent = HG.on ? 'Soltar' : 'Colgarme'; $('hgB').className = 'pri'; $('hgB').style.background = HG.on ? 'var(--stop)' : 'var(--accent)'; $('hgB').style.color = HG.on ? 'var(--stop-fg)' : 'var(--accent-fg)'; $('hgB').style.borderColor = 'transparent'; $('hgB').style.fontWeight = '700'; $('hgB').style.borderRadius = '10px'; $('hgB').style.minWidth = '0'; $('hgB').style.minHeight = '36px'; $('hgB').style.padding = '4px 12px'; $('hgB').style.fontSize = '.9rem';
 }
 function hgTick() { $('hgT').textContent = (HG.on ? (Date.now() - HG.t0) / 1000 : 0).toFixed(1) + ' s'; }
 $('hgB').addEventListener('click', function () {
@@ -1527,6 +1544,7 @@ if (ST.settings.start === '2026-11-03') { ST.settings.start = '2026-11-02'; save
 if (!ST.seed1) { if (!ST.marks['2026-11-03'] && !ST.hist.length) ST.marks['2026-11-03'] = { t: 'f', r: 'A' }; ST.seed1 = true; save(); }
 if (!ST.settings.hingeUni) { delete ST.choice.hinge; if (ST.kg.rdl_1 == null) ST.kg.rdl_1 = 11; ST.settings.hingeUni = 1; save(); }
 FZ.routine = nextRoutine();
+$('fHrB').addEventListener('click', function () { $('btnHr').click(); });
 renderHg(); setPlan(BS.plan); renderWeek(); renderF(); renderHR(); drawStrip();
 (function () {
   var t = new Date(), ty = planType(t);
